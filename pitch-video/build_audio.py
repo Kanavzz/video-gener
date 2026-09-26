@@ -1,8 +1,11 @@
 """Synthesize the voiceover sentence by sentence and write timeline.json.
 
-Requires festival (text2wave) with the cmu_us_slt_arctic_hts voice, and ffmpeg.
+Default engine is Kokoro (neural, natural-sounding), which needs `pip install
+kokoro-onnx soundfile` and the model files in models/ (see README). Set
+VOICE_ENGINE=festival to use festival's text2wave instead. Requires ffmpeg.
 """
 import json
+import os
 import subprocess
 import sys
 import wave
@@ -10,7 +13,10 @@ from pathlib import Path
 
 HERE = Path(__file__).parent
 OUT = Path(sys.argv[1]) if len(sys.argv) > 1 else HERE / "build"
-VOICE = "cmu_us_slt_arctic_hts"
+ENGINE = os.environ.get("VOICE_ENGINE", "kokoro")
+VOICE = os.environ.get("VOICE", "am_michael" if ENGINE == "kokoro" else "cmu_us_slt_arctic_hts")
+MODELS = HERE / "models"
+SPEED = float(os.environ.get("VOICE_SPEED", "1.15"))  # kokoro only
 RATE = 48000
 TARGET = 66.0  # seconds; script says ~65, keep under 70
 
@@ -40,7 +46,7 @@ SCRIPT = [
     (2, "whatsapp", "Mismatches go straight to the owner's WhatsApp, with the Excel sheet attached.",
      "Mismatches go straight to the owner's Whats App, with the Excel sheet attached."),
     (3, "team", "We're Kanav, Kyra, Ved, Krishang and Sahil.",
-     "We're Kanuv, Kyra, Vaid, Krishaang, and Saahil."),
+     "We're Kanav, Kyra, Ved, Krishang, and Sahil."),
     (3, "built", "In 24 hours we shaped the idea, built our deck, this video and our website, and started building our own API.",
      "In twenty-four hours, we shaped the idea, built our deck, this video, and our website, and started building our own A P I."),
     (3, "price", "Factories pay from ₹4,999 a month,",
@@ -63,13 +69,31 @@ def duration(path):
         return w.getnframes() / w.getframerate()
 
 
+def synthesizer():
+    if ENGINE == "festival":
+        def synth(text, wav):
+            txt = wav.with_suffix(".txt")
+            txt.write_text(text)
+            run("text2wave", "-eval", f"(voice_{VOICE})", str(txt), "-o", str(wav))
+        return synth
+
+    import soundfile
+    from kokoro_onnx import Kokoro
+    kokoro = Kokoro(str(MODELS / "kokoro-v1.0.onnx"), str(MODELS / "voices-v1.0.bin"))
+
+    def synth(text, wav):
+        samples, rate = kokoro.create(text, voice=VOICE, speed=SPEED, lang="en-us")
+        soundfile.write(str(wav), samples, rate, subtype="PCM_16")
+    return synth
+
+
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
+    synth = synthesizer()
     raw = []
     for _, sid, _, spoken in SCRIPT:
-        txt, wav = OUT / f"{sid}.txt", OUT / f"{sid}.raw.wav"
-        txt.write_text(spoken)
-        run("text2wave", "-eval", f"(voice_{VOICE})", str(txt), "-o", str(wav))
+        wav = OUT / f"{sid}.raw.wav"
+        synth(spoken, wav)
         raw.append(duration(wav))
 
     pauses = LEAD + TAIL + sum(
