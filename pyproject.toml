@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "video-gen"
+version = "0.1.0"
+description = "Generate videos from text (or an image) using models hosted on Replicate."
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = ["replicate>=1.0,<2"]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[project.scripts]
+video-gen = "video_gen.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
