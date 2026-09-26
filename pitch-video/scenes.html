@@ -1,0 +1,440 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="node_modules/@fontsource/inter/400.css">
+<link rel="stylesheet" href="node_modules/@fontsource/inter/600.css">
+<link rel="stylesheet" href="node_modules/@fontsource/inter/800.css">
+<link rel="stylesheet" href="node_modules/@fontsource/caveat/500.css">
+<link rel="stylesheet" href="node_modules/@fontsource/jetbrains-mono/500.css">
+<style>
+:root {
+  --bg: #0a1020; --panel: #121a2e; --line: #243049; --ink: #eef2f8; --dim: #93a0b8;
+  --amber: #ffb020; --red: #ff4d4f; --green: #25d366; --teal: #2dd4bf; --blue: #4f8cff;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); color: var(--ink);
+  font-family: Inter, sans-serif; }
+.scene { position: absolute; inset: 0; display: none; overflow: hidden; }
+.center { padding-bottom: 150px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.mono { font-family: "JetBrains Mono", monospace; }
+
+/* captions */
+#cap { position: absolute; left: 50%; bottom: 56px; transform: translateX(-50%); max-width: 1500px;
+  text-align: center; font-weight: 600; font-size: 42px; line-height: 1.3; padding: 14px 30px;
+  background: rgba(5, 8, 16, .78); border-radius: 14px; z-index: 50; }
+
+/* ---------- 1. CCTV ---------- */
+#cctv svg.world { position: absolute; inset: 0; filter: grayscale(.85) sepia(.25) hue-rotate(60deg) contrast(1.15) brightness(.9); }
+#cctv .scan { position: absolute; inset: 0; background: repeating-linear-gradient(0deg, rgba(0,0,0,.18) 0 2px, transparent 2px 4px); }
+#cctv .vig { position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.75)); }
+#cctv .noise { position: absolute; inset: 0; opacity: .13; mix-blend-mode: screen; }
+#cctv .hud { position: absolute; font-family: "JetBrains Mono", monospace; font-size: 34px; color: #e8f5e8;
+  text-shadow: 0 0 6px rgba(0,0,0,.9); }
+#rec { display: inline-block; width: 22px; height: 22px; border-radius: 50%; background: var(--red); margin-right: 12px; vertical-align: -2px; }
+#counter { position: absolute; top: 150px; left: 50%; transform: translateX(-50%); padding: 22px 44px;
+  background: rgba(0,0,0,.9); border: 3px solid rgba(255,255,255,.25); border-radius: 12px;
+  font-family: "JetBrains Mono", monospace; font-size: 66px; white-space: nowrap; }
+#counter b { color: var(--amber); } #counter i { font-style: normal; }
+#gap { position: absolute; top: 290px; left: 50%; transform: translateX(-50%); font-size: 40px; font-weight: 800;
+  color: #fff; background: var(--red); padding: 10px 26px; border-radius: 10px; }
+
+/* ---------- 2. stats ---------- */
+.big { font-size: 300px; font-weight: 800; letter-spacing: -8px; line-height: 1; }
+.big small { font-size: 150px; letter-spacing: -3px; }
+.sub { font-size: 60px; font-weight: 600; color: var(--dim); margin-top: 20px; }
+.tag { margin-top: 44px; font-size: 40px; font-weight: 700; padding: 14px 30px; border-radius: 999px;
+  background: rgba(255,176,32,.15); color: var(--amber); border: 2px solid rgba(255,176,32,.5); }
+#people { display: grid; grid-template-columns: repeat(20, 34px); gap: 12px; margin-top: 40px; }
+#people div { width: 34px; height: 46px; border-radius: 17px 17px 8px 8px; background: #2b3650; position: relative; }
+#people div::before { content: ""; position: absolute; top: -18px; left: 7px; width: 20px; height: 20px; border-radius: 50%; background: inherit; }
+#people div.on { background: var(--amber); }
+#pct .row { display: flex; align-items: center; gap: 70px; }
+
+/* register */
+#register { background: #2a211a; }
+#paper { position: absolute; left: 260px; top: 70px; width: 1400px; height: 940px; background: #f4ecd8;
+  border-radius: 6px; box-shadow: 0 30px 80px rgba(0,0,0,.6); transform-origin: 50% 40%;
+  background-image: linear-gradient(90deg, transparent 150px, #e27d7d 150px 153px, transparent 153px),
+    repeating-linear-gradient(0deg, transparent 0 69px, #9fb6d6 69px 71px); padding: 40px 60px 0 180px;
+  font-family: Caveat, cursive; color: #1d2d6b; }
+#paper h2 { font-weight: 500; font-size: 72px; line-height: 90px; }
+#paper .r { display: grid; grid-template-columns: 170px 330px 150px 150px 1fr; font-size: 52px; line-height: 70px; }
+#paper .r.head { color: #333; font-size: 44px; }
+#paper .x { text-decoration: line-through; text-decoration-thickness: 4px; }
+
+/* ---------- 3. product ---------- */
+.browser { position: absolute; left: 160px; top: 50px; width: 1600px; height: 800px; border-radius: 18px; overflow: hidden;
+  background: #f7f9fc; color: #0f172a; box-shadow: 0 40px 100px rgba(0,0,0,.55); }
+.bar { height: 64px; background: #e6eaf1; display: flex; align-items: center; padding: 0 24px; gap: 12px; }
+.bar span { width: 18px; height: 18px; border-radius: 50%; }
+.url { margin-left: 30px; flex: 0 0 700px; height: 40px; border-radius: 20px; background: #fff; font-size: 22px; color: #56627a;
+  display: flex; align-items: center; padding: 0 20px; }
+.nav { display: flex; align-items: center; padding: 30px 70px; font-size: 24px; color: #475569; gap: 40px; }
+.logo { display: flex; align-items: center; gap: 16px; font-weight: 800; font-size: 32px; color: #0f172a; margin-right: auto; }
+.hero { display: grid; grid-template-columns: 1fr 640px; gap: 60px; padding: 30px 70px; }
+.hero h1 { font-size: 92px; line-height: 1; letter-spacing: -3px; font-weight: 800; }
+.hero h1 em { font-style: normal; color: #d98a00; }
+.hero p { font-size: 32px; color: #475569; margin: 30px 0 44px; line-height: 1.4; }
+.btn { display: inline-block; padding: 22px 38px; border-radius: 14px; font-weight: 700; font-size: 28px; margin-right: 16px; }
+.dash { background: #0f172a; color: #e2e8f0; border-radius: 22px; padding: 34px; font-size: 26px; }
+.dash .k { display: flex; justify-content: space-between; padding: 14px 0; border-bottom: 1px solid #243049; }
+.chip { font-size: 20px; padding: 4px 12px; border-radius: 8px; font-weight: 700; }
+.ok { background: rgba(37,211,102,.18); color: #3be27f; } .bad { background: rgba(255,77,79,.18); color: #ff6b6d; }
+
+#flow h3 { position: absolute; top: 50px; width: 100%; text-align: center; font-size: 58px; font-weight: 800; }
+.nodes { position: absolute; top: 160px; left: 140px; right: 140px; display: flex; justify-content: space-between; }
+.node { width: 420px; padding: 40px 30px; border-radius: 28px; background: var(--panel); border: 3px solid var(--line); text-align: center; }
+.node .ic { width: 150px; height: 150px; margin: 0 auto 24px; border-radius: 36px; display: flex; align-items: center; justify-content: center; }
+.node h4 { font-size: 40px; } .node p { font-size: 26px; color: var(--dim); margin-top: 10px; line-height: 1.35; }
+.link { position: absolute; top: 320px; height: 8px; width: 170px;
+  background: repeating-linear-gradient(90deg, var(--amber) 0 22px, transparent 22px 36px); }
+.checks { position: absolute; top: 580px; left: 330px; right: 330px; }
+.check { display: flex; align-items: center; justify-content: space-between; font-size: 32px; padding: 18px 30px; margin-bottom: 14px;
+  border-radius: 16px; background: var(--panel); border: 2px solid var(--line); }
+.check .chip { font-size: 26px; }
+
+#phoneScene .copy { position: absolute; left: 170px; top: 220px; width: 780px; }
+#phoneScene .copy h3 { font-size: 76px; line-height: 1.08; font-weight: 800; letter-spacing: -2px; }
+#phoneScene .copy p { font-size: 36px; color: var(--dim); margin-top: 30px; line-height: 1.4; }
+.phone { position: absolute; right: 250px; top: 30px; width: 480px; height: 830px; border-radius: 70px; background: #05070c;
+  padding: 18px; box-shadow: 0 40px 100px rgba(0,0,0,.6), inset 0 0 0 3px #2b3345; }
+.screen { width: 100%; height: 100%; border-radius: 54px; overflow: hidden; background: #0b141a; position: relative; }
+.wa-head { background: #1f2c34; padding: 70px 26px 22px; display: flex; align-items: center; gap: 16px; font-size: 26px; font-weight: 600; }
+.wa-body { position: absolute; top: 160px; bottom: 0; left: 0; right: 0; padding: 26px 20px;
+  background: #0b141a radial-gradient(circle at 20% 20%, rgba(255,255,255,.03) 2px, transparent 3px) 0 0/40px 40px; }
+.msg { background: #1f2c34; border-radius: 0 18px 18px 18px; padding: 18px 20px; font-size: 24px; line-height: 1.45; width: 400px; margin-bottom: 16px; }
+.msg .t { text-align: right; font-size: 17px; color: #8696a0; margin-top: 6px; }
+.file { display: flex; align-items: center; gap: 16px; background: #182229; border-radius: 12px; padding: 16px; }
+.xl { width: 58px; height: 68px; border-radius: 8px; background: #1d6f42; color: #fff; font-weight: 800; font-size: 20px;
+  display: flex; align-items: center; justify-content: center; }
+.notif { position: absolute; left: 14px; right: 14px; top: 14px; background: rgba(40,48,60,.96); border-radius: 26px; padding: 18px 22px;
+  font-size: 21px; display: flex; gap: 14px; align-items: center; z-index: 3; }
+
+/* ---------- 4. team + price ---------- */
+#team h3, #price h3 { font-size: 64px; font-weight: 800; letter-spacing: -1px; }
+.members { display: flex; gap: 46px; margin-top: 70px; }
+.m { text-align: center; }
+.av { width: 250px; height: 250px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: 100px; font-weight: 800; color: #0a1020; }
+.m div.n { margin-top: 26px; font-size: 44px; font-weight: 700; }
+.done { display: flex; gap: 20px; margin-top: 80px; }
+.done span { font-size: 30px; font-weight: 600; padding: 14px 26px; border-radius: 999px; background: var(--panel); border: 2px solid var(--line); }
+.card { width: 700px; padding: 48px 56px; border-radius: 36px; background: var(--panel); border: 3px solid var(--amber); }
+.card .plan { font-size: 32px; color: var(--amber); font-weight: 700; text-transform: uppercase; letter-spacing: 3px; }
+.card .p { white-space: nowrap; font-size: 130px; font-weight: 800; letter-spacing: -5px; margin: 16px 0; }
+.card .p small { font-size: 44px; color: var(--dim); letter-spacing: 0; font-weight: 600; }
+.card li { list-style: none; font-size: 32px; padding: 12px 0; color: #cfd8e8; }
+.card li::before { content: "✓  "; color: var(--green); font-weight: 800; }
+.payback { width: 640px; margin-left: 90px; }
+.payback .eq { font-size: 46px; font-weight: 700; line-height: 1.35; }
+.payback .x3 { font-size: 200px; font-weight: 800; color: var(--green); letter-spacing: -6px; line-height: 1.1; }
+</style>
+</head>
+<body>
+
+<!-- 1. CCTV hook -->
+<section class="scene" id="cctv">
+  <svg class="world" viewBox="0 0 1920 1080" preserveAspectRatio="none">
+    <defs>
+      <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6b7a86"/><stop offset="1" stop-color="#9aa5ad"/></linearGradient>
+      <linearGradient id="road" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#55585c"/><stop offset="1" stop-color="#7b7e82"/></linearGradient>
+    </defs>
+    <rect width="1920" height="1080" fill="url(#road)"/>
+    <rect width="1920" height="330" fill="url(#sky)"/>
+    <!-- factory building -->
+    <polygon points="0,330 0,120 260,60 520,120 780,60 1040,120 1300,60 1560,120 1920,60 1920,330" fill="#454b52"/>
+    <rect x="1500" y="0" width="70" height="200" fill="#3a3f45"/>
+    <g fill="#5d646c"><rect x="120" y="200" width="160" height="60"/><rect x="400" y="200" width="160" height="60"/><rect x="1300" y="200" width="160" height="60"/><rect x="1620" y="200" width="160" height="60"/></g>
+    <!-- boundary wall + gate pillars -->
+    <rect x="0" y="330" width="720" height="110" fill="#8d9197"/><rect x="1200" y="330" width="720" height="110" fill="#8d9197"/>
+    <rect x="680" y="250" width="60" height="200" fill="#a4a8ad"/><rect x="1180" y="250" width="60" height="200" fill="#a4a8ad"/>
+    <text x="960" y="240" text-anchor="middle" font-family="Inter" font-weight="800" font-size="46" fill="#d7dadd">GATE 2</text>
+    <!-- open sliding gate -->
+    <g stroke="#b9bdc2" stroke-width="8"><line x1="1240" y1="345" x2="1520" y2="345"/><line x1="1240" y1="430" x2="1520" y2="430"/>
+      <line x1="1270" y1="345" x2="1270" y2="430"/><line x1="1320" y1="345" x2="1320" y2="430"/><line x1="1370" y1="345" x2="1370" y2="430"/><line x1="1420" y1="345" x2="1420" y2="430"/><line x1="1470" y1="345" x2="1470" y2="430"/></g>
+    <!-- guard booth -->
+    <rect x="360" y="420" width="220" height="200" fill="#6f757c"/><rect x="390" y="450" width="160" height="80" fill="#2f3439"/>
+    <!-- road markings -->
+    <polygon points="740,440 1180,440 1500,1080 420,1080" fill="#65686c"/>
+    <g fill="#c9ccd0"><rect x="930" y="600" width="60" height="18"/><rect x="920" y="760" width="80" height="22"/><rect x="905" y="960" width="110" height="26"/></g>
+    <g id="walkers"></g>
+  </svg>
+  <svg class="noise" viewBox="0 0 1920 1080"><filter id="nf"><feTurbulence id="turb" type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="1"/></filter><rect width="1920" height="1080" filter="url(#nf)"/></svg>
+  <div class="scan"></div><div class="vig"></div>
+  <div class="hud" style="left:60px;top:50px"><span id="rec"></span>REC &nbsp;CAM 02 · MAIN GATE</div>
+  <div class="hud" id="clock" style="right:60px;top:50px">26-09-2026 07:58:12</div>
+  <div id="counter">Billed: <b>52</b> · Counted: <i id="cnt">0</i></div>
+  <div id="gap">11 workers paid for, never here</div>
+</section>
+
+<!-- 2a. 2.6 lakh -->
+<section class="scene center" id="lakh">
+  <div class="big"><span id="lakhN">0.0</span> <small>lakh</small></div>
+  <div class="sub">registered factories in India</div>
+</section>
+
+<!-- 2b. 42% -->
+<section class="scene center" id="pct">
+  <div class="row">
+    <div><div class="big" style="color:var(--amber)"><span id="pctN">0</span>%</div>
+      <div class="sub" style="margin-top:0">of workers on contract</div></div>
+    <div id="people"></div>
+  </div>
+  <div class="tag" id="years">Highest in 27 years of government data</div>
+</section>
+
+<!-- 2c. register -->
+<section class="scene" id="register">
+  <div id="paper">
+    <h2>Truck Gate Register — Sept.</h2>
+    <div class="r head"><span>Date</span><span>Vehicle No.</span><span>In</span><span>Out</span><span>Sign</span></div>
+    <div class="r w"><span>24/9</span><span>MH12 AB 4521</span><span>8:10</span><span>9:45</span><span>R.K.</span></div>
+    <div class="r w"><span>24/9</span><span>GJ05 CU 1180</span><span>10:02</span><span>—</span><span>~</span></div>
+    <div class="r w"><span>25/9</span><span class="x">MH14 GT 77</span><span>11:4?</span><span></span><span>S.</span></div>
+    <div class="r w"><span>25/9</span><span>MH14 GT 7790</span><span>11:50</span><span>1:15</span><span>S.</span></div>
+    <div class="r w"><span>26/9</span><span>KA01 ?? 30</span><span>7:5</span><span></span><span></span></div>
+    <div class="r w"><span>26/9</span><span>DL8C AF 2</span><span></span><span></span><span></span></div>
+  </div>
+</section>
+
+<!-- 3a. website -->
+<section class="scene" id="web">
+  <div class="browser">
+    <div class="bar"><span style="background:#ff5f57"></span><span style="background:#febc2e"></span><span style="background:#28c840"></span>
+      <div class="url">🔒&nbsp; GateKeep AI</div></div>
+    <div class="nav"><div class="logo"><svg width="46" height="46"><use href="#logoMark"/></svg>GateKeep AI</div>
+      <span>How it works</span><span>Pricing</span><span>Contact</span></div>
+    <div class="hero">
+      <div><h1>Make your cameras <em>count.</em></h1>
+        <p>AI that checks every worker and every truck at your gate against the bill — using the CCTV you already own.</p>
+        <span class="btn" style="background:#0f172a;color:#fff">Book a demo</span><span class="btn" style="border:2px solid #cbd5e1">See how it works</span></div>
+      <div class="dash">
+        <div style="font-weight:700;font-size:28px;margin-bottom:14px">Today · Gate 2</div>
+        <div class="k"><span>Workers billed</span><b>52</b></div>
+        <div class="k"><span>Workers present</span><b>41</b></div>
+        <div class="k"><span>Headcount mismatch</span><span class="chip bad">−11</span></div>
+        <div class="k"><span class="mono">MH12 AB 4521</span><span class="chip ok">e-way bill ✓</span></div>
+        <div class="k" style="border:0"><span class="mono">GJ05 CU 1180</span><span class="chip bad">no e-way bill</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 3b. how it works -->
+<section class="scene" id="flow">
+  <h3>How it works</h3>
+  <div class="nodes">
+    <div class="node" id="n1"><div class="ic" style="background:rgba(79,140,255,.16)">
+      <svg width="96" height="96" viewBox="0 0 24 24" fill="none" stroke="#4f8cff" stroke-width="1.6" stroke-linecap="round"><path d="M3 7l14-3 1 5-14 3z"/><path d="M11 10.5l1 4.5H6"/><path d="M6 13v6"/><circle cx="15" cy="6.8" r="1"/></svg></div>
+      <h4>Your cameras</h4><p>The CCTV the factory already owns</p></div>
+    <div class="node" id="n2"><div class="ic" style="background:rgba(255,176,32,.16)">
+      <svg width="96" height="96" viewBox="0 0 24 24" fill="none" stroke="#ffb020" stroke-width="1.6" stroke-linecap="round"><rect x="6" y="6" width="12" height="12" rx="2"/><rect x="9.5" y="9.5" width="5" height="5"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/></svg></div>
+      <h4>Our vision API</h4><p>Recognises workers' faces<br>Reads every number plate</p></div>
+    <div class="node" id="n3"><div class="ic" style="background:rgba(37,211,102,.16)">
+      <svg width="96" height="96" viewBox="0 0 24 24" fill="none" stroke="#25d366" stroke-width="1.6" stroke-linecap="round"><path d="M4 20l1.3-3.9A8 8 0 1 1 8 19z"/><path d="M9 9.5c0 3 2.5 5.5 5.5 5.5l1-1.5-2-1-1 .8a4 4 0 0 1-2-2l.8-1-1-2z"/></svg></div>
+      <h4>Owner's WhatsApp</h4><p>Mismatch alerts with the Excel sheet</p></div>
+  </div>
+  <div class="link" id="l1" style="left:585px"></div><div class="link" id="l2" style="left:1165px"></div>
+  <div class="checks">
+    <div class="check" id="c1"><span>Headcount <b>41</b> vs contractor's bill <b>52</b></span><span class="chip bad">✗ 11 missing</span></div>
+    <div class="check" id="c2"><span><span class="mono">MH12 AB 4521</span> vs e-way bill</span><span class="chip ok">✓ match</span></div>
+    <div class="check" id="c3"><span><span class="mono">GJ05 CU 1180</span> vs e-way bill</span><span class="chip bad">✗ no bill</span></div>
+  </div>
+</section>
+
+<!-- 3c. WhatsApp alert -->
+<section class="scene" id="phoneScene">
+  <div class="copy"><h3>Every mismatch, straight to the owner's WhatsApp.</h3>
+    <p>With the Excel sheet attached.</p></div>
+  <div class="phone"><div class="screen">
+    <div class="notif" id="notif"><svg width="46" height="46"><use href="#logoMark"/></svg>
+      <div><b>GateKeep AI</b><br>⚠️ Gate 2: 11 workers missing</div></div>
+    <div class="wa-head"><svg width="54" height="54"><use href="#logoMark"/></svg>GateKeep AI</div>
+    <div class="wa-body">
+      <div class="msg" id="m1">⚠️ <b>Gate 2 mismatch · 26 Sep</b><br>Billed: 52 · Present: 41<br><b style="color:#ff6b6d">11 workers unaccounted</b><br>1 truck without e-way bill<div class="t">08:02</div></div>
+      <div class="msg" id="m2"><div class="file"><div class="xl">XLS</div><div><b>GateKeep_Report_26-Sep.xlsx</b><br><span style="color:#8696a0;font-size:20px">Excel · 18 KB</span></div></div><div class="t">08:02</div></div>
+    </div>
+  </div></div>
+</section>
+
+<!-- 4a. team -->
+<section class="scene center" id="team">
+  <h3>Built in 24 hours</h3>
+  <div class="members">
+    <div class="m"><div class="av" style="background:#ffb020">K</div><div class="n">Kanav</div></div>
+    <div class="m"><div class="av" style="background:#2dd4bf">K</div><div class="n">Kyra</div></div>
+    <div class="m"><div class="av" style="background:#4f8cff">V</div><div class="n">Ved</div></div>
+    <div class="m"><div class="av" style="background:#f472b6">K</div><div class="n">Krishang</div></div>
+    <div class="m"><div class="av" style="background:#a3e635">S</div><div class="n">Sahil</div></div>
+  </div>
+  <div class="done"><span>✓ Idea</span><span>✓ Deck</span><span>✓ This video</span><span>✓ Website</span><span>⚙ Our own API</span></div>
+</section>
+
+<!-- 4b. price -->
+<section class="scene center" id="price">
+  <div style="display:flex;align-items:center">
+    <div class="card"><div class="plan">GateKeep AI</div>
+      <div class="p">₹4,999<small> /month</small></div>
+      <ul><li>Works with your existing cameras</li><li>Headcount vs contractor bill</li><li>Trucks vs e-way bills</li><li>WhatsApp alerts + Excel</li></ul></div>
+    <div class="payback" id="payback"><div class="eq">Catch just 2 ghost workers a day and it pays back</div>
+      <div class="x3">3×+</div></div>
+  </div>
+</section>
+
+<!-- 5. close -->
+<section class="scene center" id="close">
+  <svg width="260" height="260"><use href="#logoMark"/></svg>
+  <div style="font-size:120px;font-weight:800;letter-spacing:-3px;margin-top:30px">GateKeep AI</div>
+  <div style="font-size:52px;color:var(--amber);font-weight:600;margin-top:10px">Let's make your cameras count.</div>
+  <div id="contact" style="font-size:36px;color:var(--dim);margin-top:60px"></div>
+</section>
+
+<div id="cap"></div>
+
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="logoMark" viewBox="0 0 100 100">
+    <rect x="4" y="4" width="92" height="92" rx="24" fill="#ffb020"/>
+    <path d="M24 78V40a26 26 0 0 1 52 0v38" fill="none" stroke="#0a1020" stroke-width="8"/>
+    <path d="M38 78V52M50 78V52M62 78V52" stroke="#0a1020" stroke-width="6"/>
+    <circle cx="50" cy="36" r="9" fill="#0a1020"/><circle cx="50" cy="36" r="3.5" fill="#ffb020"/>
+  </symbol>
+</svg>
+
+<script>
+// Contact line on the closing card. Fill in and re-render.
+const CONTACT = "Kanav · Kyra · Ved · Krishang · Sahil";
+
+const T = window.TIMELINE;
+const cue = Object.fromEntries(T.cues.map(c => [c.id, c]));
+const S = T.sections;
+const $ = id => document.getElementById(id);
+const clamp = x => Math.max(0, Math.min(1, x));
+const ease = x => 1 - Math.pow(1 - clamp(x), 3);
+const prog = (t, a, d = .5) => ease((t - a) / d);
+const lerp = (a, b, k) => a + (b - a) * k;
+
+function show(el, t, a, b) {
+  const o = Math.min(clamp((t - (a - .2)) / .4), clamp((b + .2 - t) / .4));
+  el.style.display = o > 0 ? (el.classList.contains("center") ? "flex" : "block") : "none";
+  el.style.opacity = o;
+  return o > 0;
+}
+function pop(el, t, a, d = .45, dy = 40) {
+  const k = prog(t, a, d);
+  el.style.opacity = k;
+  el.style.transform = `translateY(${(1 - k) * dy}px)`;
+}
+
+// build CCTV walkers and the 100-person grid once
+const W = [];
+for (let i = 0; i < 16; i++) {
+  const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  g.innerHTML = `<circle cx="0" cy="-118" r="18" fill="#2a2d31"/><rect x="-24" y="-98" width="48" height="70" rx="16" fill="#33373c"/>
+    <rect class="lg1" x="-20" y="-34" width="16" height="42" rx="7" fill="#26292d"/><rect class="lg2" x="4" y="-34" width="16" height="42" rx="7" fill="#26292d"/>`;
+  $("walkers").appendChild(g);
+  W.push({ g, start: -0.6 + i * 0.58, speed: 0.19 + (i * 37 % 7) * 0.012, lane: (i * 53 % 9) / 9 - 0.5 });
+}
+for (let i = 0; i < 100; i++) $("people").appendChild(document.createElement("div"));
+const peopleEls = [...$("people").children];
+$("contact").textContent = CONTACT;
+
+window.render = function (t) {
+  // captions
+  const c = T.cues.find(c => t >= c.start - .05 && t <= c.end + .15);
+  $("cap").style.display = c ? "" : "none";
+  if (c) $("cap").textContent = c.text;
+
+  // 1. CCTV
+  if (show($("cctv"), t, -1, S[1])) {
+    const sec = 12 + Math.floor(t);
+    $("clock").textContent = `26-09-2026 07:58:${String(sec % 60).padStart(2, "0")}`.replace(":58:", sec >= 60 ? ":59:" : ":58:");
+    $("rec").style.opacity = Math.floor(t * 2) % 2 ? .2 : 1;
+    $("turb").setAttribute("seed", Math.floor(t * 30) % 97);
+    W.forEach(w => {
+      const k = (t - w.start) * w.speed;           // 0 at bottom, 1 through the gate
+      if (k < 0 || k > 1.05) { w.g.style.display = "none"; return; }
+      w.g.style.display = "";
+      const y = lerp(1120, 470, k), x = 960 + w.lane * lerp(700, 300, k), s = lerp(1.5, .55, k);
+      w.g.setAttribute("transform", `translate(${x},${y}) scale(${s})`);
+      const sw = Math.sin(t * 9 + w.start * 3) * 6;
+      w.g.querySelector(".lg1").setAttribute("transform", `translate(0,${sw})`);
+      w.g.querySelector(".lg2").setAttribute("transform", `translate(0,${-sw})`);
+    });
+    pop($("counter"), t, cue.hook1.start + .2, .4, -20);
+    $("counter").style.transform = $("counter").style.transform.replace("translateY", "translateX(-50%) translateY");
+    const n = Math.round(41 * clamp((t - cue.hook1.start) / (cue.hook2.start + .6 - cue.hook1.start)));
+    $("cnt").textContent = n;
+    $("cnt").style.color = t > cue.hook2.start ? "var(--red)" : "";
+    pop($("gap"), t, cue.hook3.start, .4, -20);
+    $("gap").style.transform = $("gap").style.transform.replace("translateY", "translateX(-50%) translateY");
+    $("cctv").querySelector(".world").style.transform = `scale(${1 + t * .006})`;
+  }
+
+  // 2. stats
+  if (show($("lakh"), t, S[1], cue.pct.start - .1)) {
+    $("lakhN").textContent = (2.6 * prog(t, cue.lakh.start, 1.4)).toFixed(1);
+    $("lakh").style.transform = `scale(${1 + (t - S[1]) * .012})`;
+  }
+  if (show($("pct"), t, cue.pct.start - .1, cue.register.start - .1)) {
+    const k = prog(t, cue.pct.start, 1.4);
+    $("pctN").textContent = Math.round(42 * k);
+    const lit = Math.round(42 * k);
+    peopleEls.forEach((p, i) => p.classList.toggle("on", i < lit));
+    pop($("years"), t, cue.years.start, .5);
+  }
+  if (show($("register"), t, cue.register.start - .1, S[2])) {
+    const k = (t - cue.register.start) / (S[2] - cue.register.start);
+    $("paper").style.transform = `rotate(${lerp(-2.5, -1, k)}deg) scale(${lerp(1, 1.08, k)})`;
+    [...document.querySelectorAll("#paper .w")].forEach((r, i) => {
+      const w = clamp((t - cue.register.start - i * .22) / .5);
+      r.style.clipPath = `inset(0 ${100 - w * 100}% 0 0)`;
+    });
+  }
+
+  // 3. product
+  if (show($("web"), t, S[2], cue.vision.start - .1)) {
+    const k = (t - S[2]) / (cue.vision.start - S[2]);
+    const b = document.querySelector("#web .browser");
+    b.style.transform = `translateY(${(1 - prog(t, S[2], .7)) * 80}px) scale(${lerp(1, 1.04, k)})`;
+  }
+  if (show($("flow"), t, cue.vision.start - .1, cue.whatsapp.start - .1)) {
+    pop($("n1"), t, cue.vision.start);
+    pop($("l1"), t, cue.vision.start + .6);
+    pop($("n2"), t, cue.vision.start + .9);
+    pop($("l2"), t, cue.saves.start);
+    pop($("n3"), t, cue.saves.start + .3);
+    ["l1", "l2"].forEach(id => $(id).style.backgroundPositionX = `${t * 90}px`);
+    $("n2").style.borderColor = t > cue.checks.start ? "var(--amber)" : "";
+    pop($("c1"), t, cue.checks.start + .2);
+    pop($("c2"), t, cue.checks.start + 2.2);
+    pop($("c3"), t, cue.checks.start + 3.2);
+  }
+  if (show($("phoneScene"), t, cue.whatsapp.start - .1, S[3])) {
+    pop(document.querySelector("#phoneScene .copy"), t, cue.whatsapp.start, .6);
+    const nk = prog(t, cue.whatsapp.start + .4, .4) - prog(t, cue.whatsapp.start + 2.2, .4);
+    $("notif").style.transform = `translateY(${(nk - 1) * 160}px)`;
+    $("notif").style.opacity = nk;
+    pop($("m1"), t, cue.whatsapp.start + 1.1, .4);
+    pop($("m2"), t, cue.whatsapp.start + 2.0, .4);
+  }
+
+  // 4. team + price
+  if (show($("team"), t, S[3], cue.price.start - .1)) {
+    document.querySelectorAll("#team .m").forEach((m, i) => pop(m, t, cue.team.start + i * .35, .45));
+    document.querySelectorAll("#team .done span").forEach((m, i) => pop(m, t, cue.built.start + .5 + i * .8, .4, 20));
+  }
+  if (show($("price"), t, cue.price.start - .1, S[4])) {
+    pop(document.querySelector("#price .card"), t, cue.price.start, .6);
+    pop($("payback"), t, cue.payback.start + .3, .6);
+  }
+
+  // 5. close
+  if (show($("close"), t, S[4], 1e9)) {
+    const k = prog(t, S[4], .8);
+    $("close").style.transform = `scale(${lerp(.92, 1, k)})`;
+  }
+};
+</script>
+</body>
+</html>
