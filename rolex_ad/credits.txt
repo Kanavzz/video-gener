@@ -6,24 +6,20 @@ Shot 1: close up of watch mechanism
 Shot 2: drone footage of a man climbing a snowy mountain
   Video by (not confirmed — see Pexels page) — https://www.pexels.com/video/drone-footage-of-a-man-climbing-a-snowy-mountain-15781857/
   Search term: "drone footage of a man climbing a snowy mountain"
-Shot 3: elderly man fixing a pocket watch
-  Video by Tima Miroshnichenko — https://www.pexels.com/video/elderly-man-fixing-a-pocket-watch-8321913/
-  Search term: "elderly man fixing a pocket watch"
-Shot 4: deep dive underwater
+Shot 3: deep dive underwater
   Video by (not confirmed — see Pexels page) — https://www.pexels.com/video/deep-dive-underwater-17809337/
   Search term: "deep dive underwater"
-Shot 5: close up view of a rolex oyster perpetual watch
-  Video by Quang Viet Nguyen — https://www.pexels.com/video/close-up-view-of-a-rolex-oyster-perpetual-watch-17197593/
-  Search term: "luxury wristwatch close up"
-Shot 6: big waves in an ocean
+Shot 4: surfer riding the big waves of a sea
+  Video by Evgenia Kirpichnikova — https://www.pexels.com/video/surfer-riding-the-big-waves-of-a-sea-2873484/
+  Search term: "surfer riding big wave"
+Shot 5: big waves in an ocean
   Video by Sean JOHNSTON — https://www.pexels.com/video/big-waves-in-an-ocean-2802271/
   Search term: "ocean waves slow motion"
-Shot 7: male hands showing watch
-  Video by utopia 36 — https://www.pexels.com/video/male-hands-showing-watch-12178371/
-  Search term: "man adjusting watch"
-Shot 8: close up view of a rolex watch
+Shot 6: close up view of a rolex watch
   Video by Mitchel Durfee — https://www.pexels.com/video/close-up-view-of-a-rolex-watch-6230465/
   Search term: "gold watch black background"
 
-Voiceover: Microsoft Edge neural TTS (en-GB-RyanNeural) via edge-tts.
+Voiceover: Kokoro-82M (bm_george), Apache-2.0, https://huggingface.co/hexgrad/Kokoro-82M.
+Sound effects: Mixkit (https://mixkit.co/free-sound-effects/), Mixkit Sound Effects Free License —
+  #1059, #1177, #1194, #1206, #1267, #1321, #1471.
 Font: Cormorant Garamond (SIL Open Font License), Google Fonts.

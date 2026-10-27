@@ -6,3 +6,5 @@ __pycache__/
 rolex_ad/clips/
 rolex_ad/work/
 rolex_ad/final/
+rolex_ad/sfx/
+rolex_ad/.venv-tts/

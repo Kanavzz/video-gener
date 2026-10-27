@@ -1,88 +1,97 @@
-# "Time Is Earned" — Rolex spec ad (40s)
+# "Time Is Earned": Rolex spec ad (15s)
 
 A spec advertisement cut from Pexels stock footage. It is **not affiliated with or
 endorsed by Rolex SA**, and it uses the name only as plain text (no crown logo).
+
+**The cut:**
+
+| Shot | Footage | Sound |
+|---|---|---|
+| 1 | Watch movement macro | Ticking |
+| 2 | Climber on snow | Mountain wind |
+| 3 | Diver in a sea cave | Underwater rumble and bubbles |
+| 4 | Surfer on a big wave | Rough sea |
+| 5 | Wave at sunset | Breaking waves |
+| 6 | Hero watch, with "ROLEX" | Low hum, soft tick |
+| — | End card | The tick carries over |
+
+It has a natural-sounding voiceover (Kokoro), subtitles in the lower letterbox bar,
+crossfades, a colour grade and 2.39:1 bars.
 
 ## Setup
 
 ```bash
 cd rolex_ad
 pip install -r requirements.txt          # ffmpeg must also be on PATH
-cp .env.example .env                     # then put your key in .env
+
+# Kokoro (the voice) needs Python 3.12 and runs in its own env:
+uv venv -p python3.12 .venv-tts
+VIRTUAL_ENV=.venv-tts uv pip install --index-strategy unsafe-best-match \
+    --extra-index-url https://download.pytorch.org/whl/cpu torch "kokoro>=0.9.4" soundfile "numpy<2"
+# Kokoro's English model needs spaCy's en_core_web_sm. If github.com is blocked, the wheel is on Hugging Face:
+curl -L -o /tmp/en_core_web_sm-3.7.1-py3-none-any.whl \
+    https://huggingface.co/spacy/en_core_web_sm/resolve/main/en_core_web_sm-any-py3-none-any.whl
+VIRTUAL_ENV=.venv-tts uv pip install /tmp/en_core_web_sm-3.7.1-py3-none-any.whl
 ```
 
-`.env` holds `PEXELS_API_KEY=...` and is gitignored. Get a key at https://www.pexels.com/api/.
+The network needs to reach these hosts:
 
-The network needs to reach `api.pexels.com` (search, API route only), `www.pexels.com` and
-`videos.pexels.com` (clip downloads), and `speech.platform.bing.com` (edge-tts).
+- `www.pexels.com` and `videos.pexels.com`: clips.
+- `huggingface.co`: Kokoro model, first run only.
+- `assets.mixkit.co`: sound effects, first render only.
+- `speech.platform.bing.com`: only if you switch to edge-tts.
 
 ## Run
 
 ```bash
-python download_clips.py     # 1. one clip per shot -> clips/, clips/manifest.json, credits.txt
-python make_voiceover.py     # 2. four VO lines -> work/vo/, warns if a line overruns its shot
-python render.py --draft     # 3. quick render -> final/rolex_spec_ad.mp4
-python render.py             #    final-quality render
+./clips.sh                   # 1. fetch the six Pexels clips -> clips/, manifest.json, credits.txt
+python make_voiceover.py     # 2. voice the lines, polish them, time the subtitles -> work/vo/
+python render.py --draft     # 3. quick render (about 3.5 min) -> final/rolex_spec_ad.mp4
+python render.py             #    final quality
 ```
 
-Each step only redoes its own work, so after you swap a clip you just re-run `render.py`.
+Each step only redoes its own work. After swapping a clip, re-run `render.py`. After changing
+the script or voice, re-run `make_voiceover.py` and then `render.py`.
 
-## No Pexels API key? (current situation)
+## Changing things (all in `config.py`)
 
-Pexels has paused new API keys, so this cut was assembled with `fetch_by_id.py`. It downloads a
-specific clip through Pexels' own free-download link, which needs no key. Find a clip on
-pexels.com, copy its page URL, then run:
+- **Voice:** set `KOKORO_VOICE`. `bm_george` is the default British male. You can also try
+  `bm_fable`, `bm_daniel`, `am_michael`, or `af_heart`, a very natural female voice.
+  `KOKORO_SPEED` sets the pace. Set `TTS_ENGINE = "edge"` to go back to edge-tts.
+- **Lines and subtitles:** `VOICEOVER`. `say` is what the voice reads; `...` adds a pause.
+  `text` is the subtitle. Sentences become separate subtitle cues, timed to the words.
+- **Background sounds:** each shot's `sfx` is a list of `(Mixkit id, gain dB, ffmpeg filter)`.
+  Find more at https://mixkit.co/free-sound-effects/. The number in a sound's preview URL is
+  its id. The files download into `sfx/` on first render; they aren't committed, because
+  Mixkit's licence allows use but not redistribution.
+- **Timing:** shot durations, the `CROSSFADE` length, and the end card's length.
 
-```bash
-python fetch_by_id.py 5 https://www.pexels.com/video/close-up-view-of-a-rolex-watch-6230465/ \
-    --photographer "Mitchel Durfee" --start 3.5
-python render.py --draft
-```
-
-`--start` sets how many seconds into the source clip the shot begins. The script picks the
-1080p rendition when one exists and updates `clips/manifest.json` and `credits.txt`. The exact
-commands used for this cut are in `clips.sh`.
+The colour grade is the `GRADE` ffmpeg chain in `render.py`. The voice polish (warmth, softer
+top end, light compression, a touch of room) is `POLISH` in `make_voiceover.py`.
 
 ## Swapping clips
 
-- **Let Pexels pick a different one:** `python download_clips.py --shot 5`. This skips the
-  current clip and takes the next best match. You can repeat `--shot`.
-- **Change the search:** edit that shot's `queries` in `config.py`. The first term is
-  tried first, and the others are fallbacks. Then run `download_clips.py --shot N`.
-- **Use a specific clip:** drop the mp4 in `clips/` and edit that shot's `file`
-  (plus `pexels_url` and `photographer` for credits) in `clips/manifest.json`.
+Pexels has paused new API keys, so clips are fetched by ID through Pexels' free-download link:
 
-Clips are trimmed from 1s in (when there's room), scaled to cover 1920x1080, conformed to 24fps
-and graded before editing.
+```bash
+python fetch_by_id.py 4 https://www.pexels.com/video/surfer-riding-the-big-waves-of-a-sea-2873484/ \
+    --photographer "Evgenia Kirpichnikova" --start 2.5     # optional: --zoom 1.15 --anchor-x 0.8
+python render.py --draft
+```
 
-## Tweaking
-
-Everything lives in `config.py`:
-
-- **Timing:** shot durations, 0.6s crossfade, and the 0.5s VO offset.
-- **Ken Burns:** `"auto"` measures motion and zooms only static-looking clips. Set
-  `True` or `False` per shot to force it.
-- **Voiceover:** lines, voice and rate.
-- **Music:** gain, fades, and the shot it enters on.
-- **Titles:** text and fonts.
-
-The colour grade (desaturation, crushed blacks, warm highlights, vignette) is the `GRADE`
-ffmpeg filter chain at the top of `render.py`.
-
-## Music
-
-Drop a `music.mp3` in this folder and re-run `render.py`. It enters with shot 2, so shot 1
-opens on silence. It plays at -18 dB with a 2s fade-in and a 3s fade-out, and it ducks
-automatically under the voiceover. Without the file, the ad renders with voiceover only.
+`--start` sets how many seconds into the source clip the shot begins. Record your choice in
+`clips.sh` so the cut stays reproducible. If you do have a Pexels API key, put it in `.env` as
+`PEXELS_API_KEY` and `python download_clips.py --shot N` will search for you.
 
 ## Layout
 
 | Path | What |
 |---|---|
-| `config.py` | shot list, VO script, timings, look |
-| `download_clips.py` | Pexels search + download, writes `credits.txt` |
-| `make_voiceover.py` | edge-tts narration |
-| `render.py` | edit, grade, titles, letterbox, audio mix |
+| `config.py` | shots, sounds, voiceover script, timings, look |
+| `clips.sh`, `fetch_by_id.py` | the Pexels clips in this cut |
+| `download_clips.py` | Pexels API search (needs a key) and `credits.txt` writer |
+| `make_voiceover.py`, `tts_kokoro.py` | voice, polish and subtitle timing |
+| `render.py` | edit, grade, titles, subtitles, letterbox, sound mix |
 | `fonts/` | Cormorant Garamond (SIL OFL) from Google Fonts |
-| `credits.txt` | Pexels source URL and photographer for every clip |
+| `credits.txt` | every footage, sound and voice source |
 | `final/rolex_spec_ad.mp4` | the output (not committed, since `*.mp4` is gitignored) |

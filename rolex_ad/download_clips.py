@@ -77,10 +77,14 @@ def write_credits(manifest):
         lines.append(f"Shot {entry['shot']}: {entry['title']}")
         lines.append(f"  Video by {entry['photographer']} — {entry['pexels_url']}")
         lines.append(f"  Search term: \"{entry['query']}\"")
-    lines += ["", "Voiceover: Microsoft Edge neural TTS (en-GB-RyanNeural) via edge-tts.",
+    voice = (f"Kokoro-82M ({config.KOKORO_VOICE}), Apache-2.0, https://huggingface.co/hexgrad/Kokoro-82M"
+             if config.TTS_ENGINE == "kokoro" else f"Microsoft Edge neural TTS ({config.EDGE_VOICE}) via edge-tts")
+    ids = sorted({i for s in config.SHOTS for i, _, _ in s["sfx"]} | {i for i, _, _ in config.END_CARD_SFX}
+                 | {config.HERO_WHOOSH[0]})
+    lines += ["", f"Voiceover: {voice}.",
+              "Sound effects: Mixkit (https://mixkit.co/free-sound-effects/), Mixkit Sound Effects Free License —",
+              "  " + ", ".join(f"#{i}" for i in ids) + ".",
               "Font: Cormorant Garamond (SIL Open Font License), Google Fonts."]
-    if config.MUSIC.exists():
-        lines.append("Music: music.mp3 (supplied by the producer).")
     config.CREDITS.write_text("\n".join(lines) + "\n")
 
 
