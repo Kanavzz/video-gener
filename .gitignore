@@ -3,3 +3,6 @@ __pycache__/
 .venv/
 .env
 *.mp4
+rolex_ad/clips/
+rolex_ad/work/
+rolex_ad/final/
