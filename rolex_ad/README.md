@@ -13,8 +13,8 @@ cp .env.example .env                     # then put your key in .env
 
 `.env` holds `PEXELS_API_KEY=...` and is gitignored. Get a key at https://www.pexels.com/api/.
 
-The network needs to reach `api.pexels.com`, `videos.pexels.com` (clip downloads) and
-`speech.platform.bing.com` (edge-tts).
+The network needs to reach `api.pexels.com` (search, API route only), `www.pexels.com` and
+`videos.pexels.com` (clip downloads), and `speech.platform.bing.com` (edge-tts).
 
 ## Run
 
@@ -26,6 +26,22 @@ python render.py             #    final-quality render
 ```
 
 Each step only redoes its own work, so after you swap a clip you just re-run `render.py`.
+
+## No Pexels API key? (current situation)
+
+Pexels has paused new API keys, so this cut was assembled with `fetch_by_id.py`. It downloads a
+specific clip through Pexels' own free-download link, which needs no key. Find a clip on
+pexels.com, copy its page URL, then run:
+
+```bash
+python fetch_by_id.py 5 https://www.pexels.com/video/close-up-view-of-a-rolex-watch-6230465/ \
+    --photographer "Mitchel Durfee" --start 3.5
+python render.py --draft
+```
+
+`--start` sets how many seconds into the source clip the shot begins. The script picks the
+1080p rendition when one exists and updates `clips/manifest.json` and `credits.txt`. The exact
+commands used for this cut are in `clips.sh`.
 
 ## Swapping clips
 

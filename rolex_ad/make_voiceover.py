@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import os
 import subprocess
 
 import edge_tts
@@ -23,7 +24,10 @@ async def main():
     lines = []
     for i, line in enumerate(config.VOICEOVER, 1):
         path = vo_dir / f"line{i}_shot{line['shot']}.mp3"
-        await edge_tts.Communicate(line["text"], config.VOICE, rate=config.VOICE_RATE).save(str(path))
+        # aiohttp ignores HTTPS_PROXY unless told, so pass it through explicitly.
+        proxy = os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy")
+        await edge_tts.Communicate(line["text"], config.VOICE, rate=config.VOICE_RATE,
+                                   proxy=proxy).save(str(path))
         dur = duration(path)
         start = starts[line["shot"]] + config.VO_OFFSET
         room = lengths[line["shot"]] - config.VO_OFFSET

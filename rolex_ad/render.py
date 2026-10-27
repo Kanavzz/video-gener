@@ -30,9 +30,13 @@ def normalise(entry, seconds):
     dst = config.WORK_DIR / "norm" / f"shot{entry['shot']}.mp4"
     dst.parent.mkdir(parents=True, exist_ok=True)
     # Skip the first second of stock clips (often a camera settle or fade) when there's room.
-    start = 1.0 if entry["duration"] >= seconds + 2 else 0.0
+    start = entry.get("start", 1.0 if entry["duration"] >= seconds + 2 else 0.0)
+    # Optional reframing: "zoom" punches in, "anchor_x" slides the crop (0 = left, 0.5 = centre, 1 = right).
+    zoom, ax = entry.get("zoom", 1.0), entry.get("anchor_x", 0.5)
+    frame = (f"scale={round(W * zoom)}:{round(H * zoom)}:force_original_aspect_ratio=increase,"
+             f"crop={W}:{H}:(iw-{W})*{ax}:(ih-{H})/2")
     run(["ffmpeg", "-y", "-ss", str(start), "-i", str(src), "-t", f"{seconds:.3f}", "-an",
-         "-vf", f"scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},fps={config.FPS},setsar=1,{GRADE}",
+         "-vf", f"{frame},fps={config.FPS},setsar=1,{GRADE}",
          "-c:v", "libx264", "-crf", "14", "-preset", "fast", "-pix_fmt", "yuv420p", str(dst)])
     return dst
 
@@ -89,10 +93,10 @@ def text_image(text, font_path, size, tracking):
     return np.asarray(img)
 
 
-def title(text, font, size, tracking, center_y, start, end):
+def title(text, font, size, tracking, center_y, start, end, center_x=W / 2):
     rgba = text_image(text, font, size, tracking)
     clip = ImageClip(rgba[..., :3]).with_mask(ImageClip(rgba[..., 3] / 255.0, is_mask=True))
-    pos = ((W - rgba.shape[1]) // 2, int(center_y - rgba.shape[0] / 2))
+    pos = (int(center_x - rgba.shape[1] / 2), int(center_y - rgba.shape[0] / 2))
     return (clip.with_start(start).with_duration(end - start).with_position(pos)
             .with_effects([vfx.CrossFadeIn(config.TEXT_FADE), vfx.CrossFadeOut(config.TEXT_FADE)]))
 
@@ -104,7 +108,7 @@ def mix_audio(vo_lines, total, out):
     for i, line in enumerate(vo_lines):
         inputs += ["-i", line["file"]]
         ms = int(line["start"] * 1000)
-        filters.append(f"[{i}:a]aresample=48000,aformat=channel_layouts=stereo,adelay={ms}|{ms}[v{i}]")
+        filters.append(f"[{i}:a]aresample=48000,aformat=channel_layouts=stereo,volume=4dB,adelay={ms}|{ms}[v{i}]")
         labels.append(f"[v{i}]")
     filters.append(f"{''.join(labels)}amix=inputs={len(labels)}:normalize=0,apad,atrim=0:{total}[vo]")
 
@@ -168,7 +172,8 @@ def main():
 
     hero, end = starts[8], starts["end"]
     titles = [
-        title(config.HERO_TITLE, config.FONT_REGULAR, 104, 0.42, H - BAR - 120, hero + 1.0, end + 0.3),
+        # The hero watch fills the frame top to bottom, so the name sits in the dark space beside it.
+        title(config.HERO_TITLE, config.FONT_REGULAR, 92, 0.42, H / 2, hero + 1.0, end + 0.3, center_x=W * 0.18),
         title(config.END_TITLE, config.FONT_LIGHT, 68, 0.12, H / 2 - 18, end + 0.6, total),
         title(config.END_DISCLAIMER, config.FONT_REGULAR, 24, 0.16, H / 2 + 62, end + 1.2, total),
     ]
