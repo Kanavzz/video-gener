@@ -71,7 +71,10 @@ def automation(points):
 
 def env_follow(x, win=0.25):
     k = int(win * SR)
-    e = np.sqrt(np.convolve(x ** 2, np.ones(k) / k, mode="same"))
+    c = np.concatenate([[0], np.cumsum(x.astype(np.float64) ** 2)])
+    i = np.arange(len(x))
+    lo, hi = np.clip(i - k // 2, 0, len(x)), np.clip(i + k // 2, 0, len(x))
+    e = np.sqrt((c[hi] - c[lo]) / k)
     return np.clip(e / (e.max() + 1e-9) * 3, 0, 1).astype(np.float32)
 
 
@@ -320,8 +323,9 @@ def main():
 
     mus = music()
     # duck the music under the narrator
-    duck = 1 - .5 * env_follow(narr, .4)
-    mus *= duck
+    voice_env = env_follow(narr, .4)
+    mus *= 1 - .65 * voice_env
+    sfx *= 1 - .45 * voice_env  # keep ticks / typing under the narrator
 
     mix = mus * .5 + sfx * .8 + voice_bus[None, :] * 1.0
     if cut is not None:  # hard cut to silence at the end of the clock scene
@@ -340,7 +344,7 @@ def main():
         return
     mp4 = OUT / "grace_loan_opening.mp4"
     subprocess.run(["ffmpeg", "-y", "-i", str(BUILD / "video.mp4"), "-i", str(BUILD / "mix.wav"),
-                    "-map", "0:v", "-map", "1:a", "-c:v", "copy",
+                    "-map", "0:v", "-map", "1:a", "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-pix_fmt", "yuv420p",
                     "-af", "loudnorm=I=-16:TP=-1.5:LRA=14", "-c:a", "aac", "-b:a", "192k", "-ar", "48000",
                     "-movflags", "+faststart", "-shortest", str(mp4)], check=True, stderr=subprocess.DEVNULL)
     print("wrote", mp4)
