@@ -1,0 +1,706 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="node_modules/@fontsource/inter/400.css">
+<link rel="stylesheet" href="node_modules/@fontsource/inter/600.css">
+<link rel="stylesheet" href="node_modules/@fontsource/inter/400-italic.css">
+<link rel="stylesheet" href="node_modules/@fontsource/special-elite/400.css">
+<link rel="stylesheet" href="node_modules/@fontsource/courier-prime/400.css">
+<link rel="stylesheet" href="node_modules/@fontsource/courier-prime/700.css">
+<style>
+:root { --bg: #0B0D10; --paper: #EDE6D6; --teal: #2F7F7A; --red: #B3261E; --ink: #1a1d21; --grey: #8d9298; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); color: var(--paper);
+  font-family: Inter, sans-serif; }
+.scene { position: absolute; inset: 0; display: none; overflow: hidden; background: var(--bg); }
+.cam { position: absolute; inset: 0; transform-origin: 50% 50%; }
+.abs { position: absolute; }
+.type { font-family: "Special Elite", "Courier Prime", monospace; }
+.mono { font-family: "Courier Prime", monospace; }
+.caret::after { content: "▌"; opacity: var(--caret, 1); color: var(--teal); }
+
+/* overlays */
+#grain { position: absolute; inset: 0; width: 1920px; height: 1080px; z-index: 80; mix-blend-mode: overlay; pointer-events: none; }
+#vignette { position: absolute; inset: 0; z-index: 81; pointer-events: none;
+  background: radial-gradient(ellipse 75% 70% at 50% 50%, transparent 55%, rgba(0,0,0,.72)); }
+#fade { position: absolute; inset: 0; z-index: 90; background: #000; opacity: 0; }
+#sub { position: absolute; left: 50%; bottom: 70px; transform: translateX(-50%); z-index: 85; max-width: 1500px;
+  text-align: center; font: italic 400 44px/1.3 Inter, sans-serif; color: var(--paper);
+  background: rgba(0,0,0,.72); padding: 14px 32px; border-radius: 6px; opacity: 0; white-space: nowrap; }
+
+/* ID card */
+.idcard { position: absolute; width: 360px; height: 520px; background: var(--paper); border-radius: 14px;
+  box-shadow: 0 24px 60px rgba(0,0,0,.55); overflow: hidden; color: var(--ink); transform-origin: 50% 50%; }
+.idcard .band { height: 74px; background: var(--teal); color: var(--paper); padding: 16px 18px 0;
+  font: 600 15px Inter; letter-spacing: .12em; }
+.idcard .band small { display: block; font-weight: 400; font-size: 11px; letter-spacing: .22em; opacity: .85; margin-top: 5px; }
+.idcard .slot { position: absolute; top: 8px; left: 150px; width: 60px; height: 9px; border-radius: 5px; background: rgba(0,0,0,.35); }
+.idcard .photo { margin: 22px auto 0; width: 170px; height: 190px; background: #cfc8b8; border: 2px solid #b8b09f; overflow: hidden; }
+.idcard .photo svg { width: 100%; height: 100%; display: block; }
+.idcard .nm { font-family: "Special Elite"; font-size: 25px; text-align: center; margin-top: 18px; text-transform: uppercase; letter-spacing: .02em; }
+.idcard .rl { font: 600 18px Inter; text-align: center; margin-top: 8px; }
+.idcard .dp { font: 400 16px Inter; text-align: center; color: #5a5e63; margin-top: 4px; }
+.idcard .idn { position: absolute; left: 20px; bottom: 20px; font: 400 14px "Courier Prime"; color: #444; }
+.idcard .bar { position: absolute; right: 20px; bottom: 18px; height: 26px; display: flex; align-items: stretch; }
+.idcard .bar i { display: block; background: #222; margin-left: 2px; }
+.idcard.blank { opacity: .16; filter: grayscale(1); }
+.idcard.blank .ph { height: 12px; background: #b9b2a3; margin: 16px auto 0; width: 220px; border-radius: 3px; }
+.pin { position: absolute; left: 165px; top: 4px; width: 30px; height: 30px; border-radius: 50%; z-index: 3;
+  background: radial-gradient(circle at 35% 35%, #d8d8d8, #6b6f74 55%, #2b2e31); box-shadow: 0 6px 8px rgba(0,0,0,.6); }
+
+/* paper props */
+.paper { position: absolute; background: var(--paper); color: var(--ink); box-shadow: 0 20px 50px rgba(0,0,0,.6); border-radius: 3px; }
+.redact { display: inline-block; height: 26px; background: #121417; vertical-align: -5px; border-radius: 2px; }
+
+/* S1 voicemail */
+#vm-meta { left: 90px; top: 80px; font: 400 30px/1.55 "Courier Prime"; color: rgba(237,230,214,.9); white-space: pre; }
+#vm-meta .t1 { color: var(--teal); font-weight: 700; }
+#vm-wave { left: 260px; top: 340px; }
+#vm-status { left: 90px; bottom: 210px; font: 400 26px "Courier Prime"; color: rgba(237,230,214,.6); }
+#vm-end { width: 100%; text-align: center; top: 760px; font: 400 30px "Courier Prime"; letter-spacing: .3em; color: rgba(237,230,214,.6); }
+
+/* S2 title */
+#t-title { width: 100%; text-align: center; top: 420px; font-size: 104px; letter-spacing: .04em; color: var(--paper); }
+.stamp { border: 7px solid var(--red); color: var(--red); font: 400 64px "Special Elite"; padding: 6px 30px 0;
+  letter-spacing: .12em; border-radius: 8px; }
+#t-stamp { left: 50%; top: 600px; transform-origin: 50% 50%; }
+
+/* S3 kabir */
+#k-desk { inset: 0; background: radial-gradient(ellipse 70% 80% at 65% 55%, #1b2024, #0B0D10 75%); }
+#k-form { left: 900px; top: 150px; width: 640px; height: 760px; padding: 44px 48px; font: 400 25px/1.2 "Courier Prime"; }
+#k-form h4 { font: 400 30px "Special Elite"; border-bottom: 3px solid var(--ink); padding-bottom: 12px; margin-bottom: 26px; }
+#k-form .f { margin: 0 0 22px; display: flex; gap: 12px; }
+#k-form .f b { width: 190px; flex: none; font-weight: 700; }
+#k-form .f span { flex: 1; border-bottom: 2px dotted #777; min-height: 30px; }
+#k-sticky { left: 1300px; top: 640px; width: 330px; height: 250px; background: #e2d49a; color: #2a2414; padding: 34px 28px;
+  font: 400 36px/1.3 "Special Elite"; box-shadow: 0 18px 40px rgba(0,0,0,.55); }
+#k-files .fold { position: absolute; width: 520px; height: 90px; border-radius: 6px 6px 3px 3px; }
+#k-datestamp { left: 1235px; top: 215px; border: 5px solid var(--teal); color: var(--teal); font: 700 40px "Courier Prime";
+  padding: 6px 18px; border-radius: 6px; transform: rotate(-7deg); }
+
+/* S4 hospital */
+#h-svg .dr { fill: none; stroke: var(--paper); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+#h-svg .tl { stroke: var(--teal); }
+#h-list { left: 1220px; top: 250px; width: 620px; }
+#h-list .it { margin-bottom: 44px; opacity: 0; }
+#h-list .it small { display: block; font: 400 20px "Courier Prime"; letter-spacing: .25em; color: var(--teal); margin-bottom: 6px; }
+#h-list .it div { font: 400 46px/1.15 "Special Elite"; }
+#h-list .it div::after { content: ""; display: block; width: var(--u, 0px); height: 3px; background: var(--teal); margin-top: 12px; }
+#h-info { inset: 0; opacity: 0; }
+#h-web { left: 310px; top: 150px; width: 1300px; height: 760px; background: #f3efe6; border-radius: 12px; overflow: hidden;
+  color: var(--ink); box-shadow: 0 30px 80px rgba(0,0,0,.7); opacity: 0; }
+#h-web .chrome { height: 58px; background: #d9d3c5; display: flex; align-items: center; padding: 0 22px; gap: 10px; }
+#h-web .chrome i { width: 16px; height: 16px; border-radius: 50%; background: #a39d90; }
+#h-web .url { margin-left: 22px; flex: 1; height: 34px; background: #f3efe6; border-radius: 17px; font: 400 19px "Courier Prime"; padding: 6px 20px; color: #555; }
+#h-web .hero { background: var(--teal); color: var(--paper); padding: 56px 70px; }
+#h-web .hero h1 { font: 400 70px "Special Elite"; }
+#h-web .hero p { font: 400 30px Inter; margin-top: 14px; opacity: .92; }
+#h-web .tiles { display: flex; gap: 30px; padding: 46px 70px; }
+#h-web .tile { flex: 1; border: 2px solid #cfc8b8; border-radius: 10px; padding: 26px; font: 600 26px Inter; }
+#h-web .tile small { display: block; font: 400 19px Inter; color: #666; margin-top: 10px; }
+
+/* S5 rahul */
+#r-light { inset: 0; background: radial-gradient(ellipse 55% 70% at 30% 30%, #3b4045 0%, #1a1d20 55%, #0B0D10 85%); }
+#r-slip { left: 930px; top: 230px; width: 930px; height: 520px; padding: 40px 46px; font: 400 23px/1.25 "Courier Prime"; }
+#r-slip h4 { font: 400 26px "Special Elite"; border-bottom: 3px solid var(--ink); padding-bottom: 12px; margin-bottom: 24px; letter-spacing: .03em; }
+#r-slip .row { margin-bottom: 18px; white-space: nowrap; }
+#r-slip .vis { background: rgba(47,127,122,.14); padding: 6px 8px; margin-left: -8px; font-weight: 700; }
+#r-cal { left: 1030px; top: 140px; width: 740px; padding: 40px 44px; opacity: 0; }
+#r-cal h3 { font: 400 50px "Special Elite"; text-align: center; margin-bottom: 26px; }
+#r-cal .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+#r-cal .wd { font: 700 20px "Courier Prime"; text-align: center; color: #666; padding-bottom: 8px; }
+#r-cal .d { height: 92px; border: 2px solid #d2cab8; border-radius: 6px; font: 400 30px "Courier Prime"; padding: 6px 10px; position: relative; }
+#r-cal .d.e { border-color: transparent; }
+#r-cal .d .glow { position: absolute; inset: -2px; border-radius: 6px; background: var(--teal); opacity: 0; }
+#r-cal .d span { position: relative; }
+#r-cal .d .line { position: absolute; left: 8px; bottom: 30px; height: 3px; background: var(--red); width: 0; }
+
+/* S6 question */
+#q-lamp { inset: 0; background: radial-gradient(ellipse 30% 60% at 27% 18%, rgba(237,230,214,.22), rgba(237,230,214,.05) 55%, transparent 75%); }
+#q-qs { left: 780px; top: 560px; font: 400 48px/1.6 "Special Elite"; white-space: pre; }
+
+/* S7 people */
+#p-board { left: 50%; top: 50%; width: 3600px; height: 2100px; margin: -1050px 0 0 -1800px; border-radius: 10px;
+  background-color: #2a2118; transform-origin: 50% 50%;
+  background-image: radial-gradient(rgba(255,255,255,.035) 1px, transparent 1.6px), radial-gradient(rgba(0,0,0,.25) 1px, transparent 1.8px);
+  background-size: 7px 7px, 11px 11px; box-shadow: inset 0 0 160px rgba(0,0,0,.8); }
+#p-strings { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
+
+/* S8 clock */
+#c-stamp { left: 50%; top: 120px; transform: translateX(-50%); border: 6px solid var(--paper); padding: 10px 34px 4px;
+  font: 700 92px "Courier Prime"; letter-spacing: .06em; border-radius: 8px; overflow: hidden; height: 132px; white-space: nowrap; }
+#c-stamp .roll { position: relative; }
+#c-ts { right: 70px; top: 50px; font: 400 26px "Courier Prime"; color: rgba(237,230,214,.75); letter-spacing: .08em; }
+
+/* S9 end */
+#e-lines { width: 100%; text-align: center; top: 340px; font: 400 66px/1.7 "Special Elite"; }
+#e-lines div:nth-child(3) { font-size: 50px; }
+#e-title { width: 100%; text-align: center; top: 400px; font: 400 66px "Special Elite"; letter-spacing: .05em; opacity: 0; }
+#e-tag { width: 100%; text-align: center; top: 510px; font: 400 40px "Courier Prime"; color: var(--teal); letter-spacing: .08em; }
+#e-org { width: 100%; text-align: center; top: 850px; font: 400 30px "Courier Prime"; color: rgba(237,230,214,.45);
+  letter-spacing: .2em; opacity: 0; }
+#e-org span { border: 2px dashed rgba(237,230,214,.3); padding: 18px 40px; }
+</style>
+</head>
+<body>
+
+<!-- 1 · VOICEMAIL -->
+<div class="scene" id="s-voicemail"><div class="cam">
+  <div class="abs" id="vm-meta"></div>
+  <canvas class="abs" id="vm-wave" width="1400" height="400"></canvas>
+  <div class="abs" id="vm-status"></div>
+  <div class="abs" id="vm-end"></div>
+</div></div>
+
+<!-- 2 · TITLE -->
+<div class="scene" id="s-title"><div class="cam">
+  <div class="abs type" id="t-title"></div>
+  <div class="abs stamp" id="t-stamp">CASE OPEN</div>
+</div></div>
+
+<!-- 3 · KABIR -->
+<div class="scene" id="s-kabir"><div class="cam">
+  <div class="abs" id="k-desk"></div>
+  <div class="abs" id="k-files"></div>
+  <div class="paper" id="k-form">
+    <h4>OPD REGISTRATION — DATA ENTRY</h4>
+    <div class="f"><b>Reg. No.</b><span id="kf0"></span></div>
+    <div class="f"><b>Patient</b><span id="kf1"></span></div>
+    <div class="f"><b>Age / Sex</b><span id="kf2"></span></div>
+    <div class="f"><b>Department</b><span id="kf3"></span></div>
+    <div class="f"><b>Visit date</b><span id="kf4"></span></div>
+    <div class="f"><b>Entered by</b><span id="kf5"></span></div>
+    <div class="f"><b>Remarks</b><span id="kf6"></span></div>
+  </div>
+  <div class="abs" id="k-datestamp">MON 30 NOV 2026</div>
+  <div class="abs" id="k-sticky">Clear voicemails<br>— 1 month</div>
+  <div id="k-card-wrap"></div>
+</div></div>
+
+<!-- 4 · HOSPITAL -->
+<div class="scene" id="s-hospital"><div class="cam">
+  <div class="abs" id="h-main" style="inset:0">
+    <svg id="h-svg" class="abs" width="1920" height="1080" viewBox="0 0 1920 1080"></svg>
+    <div class="abs" id="h-list">
+      <div class="it"><small>LOCATION</small><div>Rajpur Road, Dehradun</div></div>
+      <div class="it"><small>CAPACITY</small><div>210 beds</div></div>
+      <div class="it"><small>MOTTO</small><div>“Healing without barriers”</div></div>
+      <div class="it"><small>EMPANELLED</small><div>State Pro Bono Care Scheme</div></div>
+    </div>
+  </div>
+  <div class="abs" id="h-info"><svg width="1920" height="1080" viewBox="0 0 1920 1080" id="h-info-svg"></svg></div>
+  <div class="abs" id="h-web">
+    <div class="chrome"><i></i><i></i><i></i><div class="url">graceloanmemorial.example / free-care</div></div>
+    <div class="hero"><h1>Healing without barriers</h1>
+      <p>Hundreds of free treatments under the State Pro Bono Care Scheme.</p></div>
+    <div class="tiles">
+      <div class="tile">Free OPD consultations<small>For every eligible patient</small></div>
+      <div class="tile">Free diagnostics<small>X-ray, blood tests and more</small></div>
+      <div class="tile">No one turned away<small>— Office of the Director</small></div>
+    </div>
+  </div>
+</div></div>
+
+<!-- 5 · RAHUL -->
+<div class="scene" id="s-rahul"><div class="cam">
+  <div class="abs" id="r-light"></div>
+  <svg class="abs" id="r-chairs" width="1920" height="1080" viewBox="0 0 1920 1080"></svg>
+  <div class="paper" id="r-slip">
+    <h4>GRACE LOAN MEMORIAL HOSPITAL · OPD SYMPTOM SLIP</h4>
+    <div class="row">REG. NO: <span class="redact" style="width:260px"></span>&nbsp; DATE: <span class="redact" style="width:170px"></span></div>
+    <div class="row vis">NAME: Rahul Singh · AGE: 12 · ACCOMPANIED BY: Grandmother</div>
+    <div class="row">COMPLAINTS: <span class="redact" style="width:470px"></span></div>
+    <div class="row"><span class="redact" style="width:640px"></span></div>
+    <div class="row">SEEN BY: <span class="redact" style="width:330px"></span></div>
+    <div class="row">ADVICE: <span class="redact" style="width:520px"></span></div>
+  </div>
+  <div class="paper" id="r-cal"><h3>NOVEMBER 2026</h3><div class="grid" id="r-grid"></div></div>
+</div></div>
+
+<!-- 6 · QUESTION -->
+<div class="scene" id="s-question"><div class="cam">
+  <div class="abs" id="q-lamp"></div>
+  <svg class="abs" width="1920" height="1080" viewBox="0 0 1920 1080">
+    <path d="M430 0 V120" stroke="#3a3f44" stroke-width="8"/>
+    <path d="M360 200 L410 120 H450 L500 200 Z" fill="#2a2e33" stroke="#4a4f55" stroke-width="3"/>
+    <ellipse cx="430" cy="202" rx="70" ry="8" fill="rgba(237,230,214,.55)"/>
+    <rect x="0" y="905" width="1920" height="175" fill="#14171a"/>
+    <path d="M0 905 H1920" stroke="#2a2e33" stroke-width="3"/>
+  </svg>
+  <div id="q-card-wrap"></div>
+  <canvas class="abs" id="q-wave" width="1400" height="400" style="left:820px;top:170px;width:900px;height:260px"></canvas>
+  <div class="abs" id="q-qs"></div>
+</div></div>
+
+<!-- 7 · PEOPLE -->
+<div class="scene" id="s-people"><div class="cam">
+  <div class="abs" id="p-board"><svg id="p-strings" width="3600" height="2100" viewBox="0 0 3600 2100"></svg></div>
+</div></div>
+
+<!-- 8 · CLOCK -->
+<div class="scene" id="s-clock"><div class="cam">
+  <div class="abs" id="c-stamp"><div class="roll" id="c-roll"></div></div>
+  <svg class="abs" id="c-clock" width="1920" height="1080" viewBox="0 0 1920 1080"></svg>
+  <div class="abs" id="c-ts"></div>
+</div></div>
+
+<!-- 9 · END -->
+<div class="scene" id="s-end"><div class="cam">
+  <div class="abs" id="e-lines"><div></div><div></div><div></div></div>
+  <div class="abs" id="e-title">THE GRACE LOAN MEMORIAL CASE</div>
+  <div class="abs" id="e-tag"></div>
+  <div class="abs" id="e-org"><span>[ORGANISER / EVENT NAME]</span></div>
+</div></div>
+
+<div id="sub"></div>
+<canvas id="grain" width="960" height="540"></canvas>
+<div id="vignette"></div>
+<div id="fade"></div>
+
+<script>
+const T = window.TIMELINE;
+const $ = id => document.getElementById(id);
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const lerp = (a, b, p) => a + (b - a) * p;
+const prog = (t, a, b) => clamp((t - a) / (b - a));
+const ease = p => p < .5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+const easeOut = p => 1 - Math.pow(1 - p, 3);
+const backOut = p => { const c = 1.6; return 1 + (c + 1) * Math.pow(p - 1, 3) + c * Math.pow(p - 1, 2); };
+function hash(n) { n = (n << 13) ^ n; return ((n * (n * n * 15731 + 789221) + 1376312589) & 0x7fffffff) / 0x7fffffff; }
+
+const SC = {}; T.scenes.forEach(s => SC[s.id] = s);
+const CU = {}; T.cues.forEach(c => CU[c.id] = c);
+const kamlaCues = T.cues.filter(c => c.speaker === "KAMLA");
+const S = id => SC[id].start;
+
+// ---------- event registry (shared with the audio mixer) ----------
+const EVENTS = [];
+const ev = (t, kind, extra = {}) => { EVENTS.push(Object.assign({ t: +t.toFixed(3), kind }, extra)); return t; };
+function typing(text, t0, cps, vol = 1) {
+  const o = { text, t0, cps, t1: t0 + text.length / cps };
+  for (let i = 0; i < text.length; i++) if (text[i] !== " ") ev(t0 + i / cps + (hash(i * 31 + text.length) - .5) * .25 / cps, "key", { vol, v: hash(i * 7 + 3) });
+  return o;
+}
+function typed(o, t) { return o.text.slice(0, Math.floor(clamp((t - o.t0) * o.cps, 0, o.text.length))); }
+function typedHTML(o, t) {
+  const s = typed(o, t);
+  if (t < o.t0 - .3) return "";
+  const caretOn = t < o.t1 + .6 && (Math.floor(t * 3.2) % 2 === 0 || t < o.t1);
+  return esc(s) + (caretOn ? '<span style="color:var(--teal)">▌</span>' : "");
+}
+const esc = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
+
+// ---------- shared components ----------
+const SIL = `<svg viewBox="0 0 100 112" preserveAspectRatio="xMidYMax meet"><rect width="100" height="112" fill="#cfc8b8"/>
+  <path d="M42 62 h16 v12 h-16z" fill="#62666b"/><ellipse cx="50" cy="42" rx="18" ry="22" fill="#62666b"/>
+  <path d="M6 112 C8 84 26 72 50 72 C74 72 92 84 94 112 Z" fill="#62666b"/></svg>`;
+function barcode(seed) {
+  let s = ""; for (let i = 0; i < 26; i++) s += `<i style="width:${1 + Math.floor(hash(seed * 97 + i) * 3)}px"></i>`; return s;
+}
+function card(name, role, dept, id, seed) {
+  return `<div class="slot"></div><div class="band">GRACE LOAN MEMORIAL<small>STAFF IDENTITY CARD</small></div>
+    <div class="photo">${SIL}</div><div class="nm">${name}</div><div class="rl">${role}</div><div class="dp">${dept}</div>
+    <div class="idn">ID ${id}</div><div class="bar">${barcode(seed)}</div>`;
+}
+function makeCard(parent, html, x, y, scale, extraClass = "") {
+  const d = document.createElement("div");
+  d.className = "idcard " + extraClass; d.innerHTML = html;
+  d.style.left = x + "px"; d.style.top = y + "px"; d.dataset.s = scale;
+  d.style.transform = `scale(${scale})`;
+  parent.appendChild(d); return d;
+}
+
+// Voicemail waveform drawn from the real loudness envelope of the voice track.
+const ENV = T.kamla_env;
+const envAt = t => { const i = Math.floor(t * 30); return i >= 0 && i < ENV.length ? ENV[i] : 0; };
+function drawWave(cv, tAbs, opts = {}) {
+  const ctx = cv.getContext("2d"), W = cv.width, H = cv.height, N = 140, bw = 5, c = (N - 1) / 2;
+  ctx.clearRect(0, 0, W, H);
+  if (opts.alpha === 0) return;
+  ctx.globalAlpha = opts.alpha ?? 1;
+  ctx.fillStyle = "#2F7F7A";
+  ctx.shadowColor = "rgba(47,127,122,.8)"; ctx.shadowBlur = 14;
+  const frame = Math.floor(tAbs * 30);
+  for (let i = 0; i < N; i++) {
+    const d = Math.abs(i - c);
+    const shape = .3 + .7 * Math.cos(d / c * Math.PI / 2);
+    const src = opts.envT ? opts.envT(tAbs - d * .011) : envAt(tAbs - d * .011);
+    let a = src * shape * (0.75 + 0.5 * hash(i * 13 + frame * 7));
+    a += (opts.idle ?? .025) * (0.5 + hash(i * 3 + frame * 11));
+    if (opts.dead) a = 0;
+    const h = Math.max(3, a * (H - 20) * (opts.gain ?? 1));
+    ctx.fillRect(i * (W / N) + 2, (H - h) / 2, bw, h);
+  }
+  ctx.globalAlpha = 1; ctx.shadowBlur = 0;
+}
+
+// ---------- 1 · voicemail ----------
+const V = { s: S("voicemail") };
+V.lines = ["GRACE LOAN MEMORIAL HOSPITAL — GENERAL LINE", "OLD MESSAGES: 47 · PLAYING 31 OF 47", "RECEIVED: TUE 24 NOV 2026 · 11:52 PM"];
+V.ty = []; { let t0 = V.s + 1.9; V.lines.forEach((l, i) => { V.ty.push(typing(l, t0, 42, .55)); t0 = V.ty[i].t1 + .15; }); }
+V.k0 = kamlaCues[0].start; V.k1 = kamlaCues[kamlaCues.length - 1].end;
+V.beep = ev(V.k0 - 1.05, "beep");
+ev(V.beep + .5, "hiss_on");
+V.dead = ev(V.k1 + .7, "hangup"); ev(V.dead, "hiss_off");
+V.beep2 = ev(V.dead + .45, "beep2");
+V.endTy = typing("END OF MESSAGE", V.beep2 + .35, 24, .4);
+function r_voicemail(t, lt) {
+  $("vm-meta").innerHTML = V.ty.map((o, i) => `<span class="${i ? "" : "t1"}">${typedHTML(o, t)}</span>`).join("\n");
+  const wv = $("vm-wave");
+  wv.style.opacity = ease(prog(lt, 1.0, 2.2)) * (1 - .55 * prog(t, V.endTy.t1 + .5, V.endTy.t1 + 1.6));
+  drawWave(wv, t, { dead: t > V.dead, idle: t > V.beep + .5 && t < V.dead ? .05 : .02 });
+  const playing = t >= V.beep + .3 && t < V.dead;
+  const el = Math.max(0, Math.min(t, V.dead) - (V.beep + .3));
+  const mm = s => "00:" + String(Math.floor(s)).padStart(2, "0");
+  $("vm-status").textContent = t < V.beep ? "" : (playing ? (Math.floor(t * 2) % 2 ? "▶ " : "▷ ") + "PLAYING  " : "■ STOPPED  ") + mm(el) + " / " + mm(V.dead - V.beep - .3);
+  $("vm-end").textContent = typed(V.endTy, t);
+  // Kamla's subtitles
+  let sub = "", so = 0;
+  kamlaCues.forEach((c, i) => {
+    const next = kamlaCues[i + 1]; const end = next ? Math.min(c.end + .6, next.start - .05) : c.end + .9;
+    if (t >= c.start - .15 && t < end) { sub = c.text; so = prog(t, c.start - .15, c.start + .05) * (1 - prog(t, end - .15, end)); }
+  });
+  return { sub, so };
+}
+
+// ---------- 2 · title ----------
+const TI = { s: S("title") };
+TI.ty = typing("THE GRACE LOAN MEMORIAL CASE", TI.s + .7, 11);
+TI.stamp = ev(TI.ty.t1 + .7, "stamp");
+ev(TI.s + .2, "music_start");
+function r_title(t, lt) {
+  $("t-title").innerHTML = typedHTML(TI.ty, t);
+  const p = prog(t, TI.stamp - .12, TI.stamp);
+  const st = $("t-stamp");
+  st.style.opacity = p > 0 ? clamp(p * 1.4) * .95 : 0;
+  st.style.transform = `translateX(-50%) rotate(-6deg) scale(${lerp(2.4, 1, easeOut(p))})`;
+  return { shake: t > TI.stamp ? Math.max(0, 1 - (t - TI.stamp) / .35) : 0 };
+}
+
+// ---------- 3 · kabir ----------
+const K = { s: S("kabir") };
+K.card = makeCard($("k-card-wrap"), card("Kabir Rao", "Intern", "Rotating · 5 months", "GLM-I-0417", 5), 210, 230, 1.25);
+ev(K.s + .25, "slide");
+K.files = [];
+for (let i = 0; i < 6; i++) {
+  const f = document.createElement("div"); f.className = "fold";
+  f.style.left = (1220 + i * 6) + "px"; f.style.top = (900 - i * 26) + "px";
+  f.style.background = i % 2 ? "#c9b98f" : "#b9a77a"; f.style.boxShadow = "0 6px 12px rgba(0,0,0,.5)";
+  $("k-files").appendChild(f); K.files.push(f);
+}
+ev(K.s + 1.0, "slide", { vol: .6 });
+K.formIn = ev(CU.s3p2l1.start - .3, "slide");
+K.fields = ["GLM/26/11/0418", "A. Negi", "54 / F", "General Medicine", "27-11-2026", "K. Rao (intern)", "Follow-up advised"];
+K.fty = []; { let t0 = K.formIn + .9; K.fields.forEach(f => { const o = typing(f, t0, 17, .7); K.fty.push(o); t0 = o.t1 + .25; }); }
+K.stampT = ev(CU.s3p3l1.start + 1.1, "stamp", { vol: .55 });
+K.sticky = ev(CU.s3p3l2.start - .1, "slide", { vol: .8 });
+K.dark = CU.s3p4l1.start;
+ev(CU.s3p4l1.end - .15, "thud");
+function r_kabir(t, lt, dur) {
+  const p = easeOut(prog(lt, 0, .8));
+  K.card.style.transform = `translate(${lerp(-700, 0, p)}px, 0) rotate(${lerp(-8, -2, p)}deg) scale(1.25)`;
+  const dk = ease(prog(t, K.dark, K.dark + 1.5));
+  K.card.style.boxShadow = `0 24px 60px rgba(0,0,0,.55), 0 0 ${60 * dk}px rgba(47,127,122,${.55 * dk})`;
+  K.files.forEach((f, i) => { const q = easeOut(prog(lt, .9 + i * .08, 1.5 + i * .08)); f.style.opacity = q * (1 - .7 * dk); f.style.transform = `translateY(${(1 - q) * 60}px)`; });
+  const fp = easeOut(prog(t, K.formIn, K.formIn + .7));
+  $("k-form").style.transform = `translate(${(1 - fp) * 900}px, ${(1 - fp) * 60}px) rotate(${lerp(8, 2.2, fp)}deg)`;
+  $("k-form").style.opacity = (fp > 0 ? 1 : 0) * (1 - .7 * dk);
+  K.fty.forEach((o, i) => $("kf" + i).innerHTML = typedHTML(o, t));
+  const sp = prog(t, K.stampT - .1, K.stampT);
+  $("k-datestamp").style.opacity = (sp > 0 ? .9 : 0) * (1 - .7 * dk);
+  $("k-datestamp").style.transform = `rotate(-7deg) scale(${lerp(2, 1, easeOut(sp))})`;
+  const kp = backOut(prog(t, K.sticky, K.sticky + .55));
+  $("k-sticky").style.opacity = (t > K.sticky ? 1 : 0) * (1 - .45 * dk);
+  $("k-sticky").style.transform = `translate(${(1 - kp) * 500}px, ${(1 - kp) * -300}px) rotate(${lerp(20, 4, kp)}deg)`;
+  $("k-desk").style.opacity = 1 - .6 * dk;
+  return { vig: dk * .6 };
+}
+
+// ---------- 4 · hospital ----------
+const H = { s: S("hospital") };
+{
+  const P = [];
+  const L = (d, cls = "") => P.push(`<path class="dr ${cls}" d="${d}" pathLength="1"/>`);
+  const R = (x, y, w, h, cls = "") => L(`M${x} ${y} h${w} v${h} h${-w} Z`, cls);
+  L("M80 560 L250 440 L330 490 L520 360 L700 470 L820 410 L960 480 L1120 430 L1160 460", "mtn");
+  L("M60 822 H1180");
+  R(140, 560, 120, 262); R(900, 560, 160, 262); R(260, 420, 640, 402);
+  R(300, 436, 560, 50, "tl");
+  for (let r = 0; r < 4; r++) for (let c = 0; c < 6; c++) if (!(r === 3 && (c === 2 || c === 3))) R(300 + c * 96, 512 + r * 74, 58, 42, "win");
+  for (let r = 0; r < 3; r++) { R(170, 600 + r * 70, 60, 40, "win"); R(940, 600 + r * 70, 34, 40, "win"); R(1000, 600 + r * 70, 34, 40, "win"); }
+  L("M470 742 H690 L670 726 H490 Z"); R(520, 742, 120, 80); L("M580 742 V822");
+  L("M580 330 V420", "tl"); L("M555 352 H605 M580 327 V377", "tl cross");
+  [[80, 700, 48], [1110, 690, 56], [1160, 730, 40]].forEach(([x, y, r]) => { L(`M${x} ${y + r} V822`); L(`M${x - r} ${y} a${r} ${r} 0 1 0 ${2 * r} 0 a${r} ${r} 0 1 0 ${-2 * r} 0`); });
+  P.push(`<text x="580" y="470" text-anchor="middle" font-family="Special Elite" font-size="30" fill="#EDE6D6" id="h-sign" opacity="0">GRACE LOAN MEMORIAL HOSPITAL</text>`);
+  $("h-svg").innerHTML = P.join("");
+  H.paths = [...$("h-svg").querySelectorAll("path")];
+  H.paths.forEach(p => { p.style.strokeDasharray = 1; p.style.strokeDashoffset = 1; });
+  H.wins = [...$("h-svg").querySelectorAll(".win")];
+
+  const I = [];
+  // government building (left) and hospital (right), with an arrow between
+  I.push(`<g id="gi" class="dr" stroke="#EDE6D6" stroke-width="5" fill="none"><path d="M430 470 L560 400 L690 470 Z"/><path d="M440 690 H680 M420 712 H700"/>
+    <path d="M465 490 V675 M515 490 V675 M560 490 V675 M605 490 V675 M655 490 V675"/><path d="M445 480 H675"/></g>`);
+  I.push(`<g id="hi" stroke="#EDE6D6" stroke-width="5" fill="none"><rect x="1240" y="450" width="240" height="250"/><rect x="1330" y="620" width="60" height="80"/>
+    <path d="M1360 480 V560 M1320 520 H1400" stroke="#2F7F7A" stroke-width="16"/></g>`);
+  I.push(`<path id="h-arrow" d="M740 560 H1160 M1130 530 L1170 560 L1130 590" stroke="#2F7F7A" stroke-width="6" fill="none" pathLength="1" stroke-linecap="round"/>`);
+  I.push(`<text x="955" y="500" text-anchor="middle" font-family="Courier Prime" font-size="34" fill="#EDE6D6" id="h-alabel">fixed amount per patient</text>`);
+  I.push(`<text x="560" y="780" text-anchor="middle" font-family="Courier Prime" font-size="28" fill="#8d9298" letter-spacing="4">STATE GOVERNMENT</text>`);
+  I.push(`<text x="1360" y="780" text-anchor="middle" font-family="Courier Prime" font-size="28" fill="#8d9298" letter-spacing="4">GRACE LOAN MEMORIAL</text>`);
+  I.push(`<text x="960" y="250" text-anchor="middle" font-family="Special Elite" font-size="52" fill="#EDE6D6">State Pro Bono Care Scheme</text>`);
+  for (let i = 0; i < 3; i++) I.push(`<g class="coin" opacity="0"><circle r="26" fill="#2F7F7A"/><text y="11" text-anchor="middle" font-family="Inter" font-weight="600" font-size="30" fill="#EDE6D6">₹</text></g>`);
+  $("h-info-svg").innerHTML = I.join("");
+  H.coins = [...$("h-info-svg").querySelectorAll(".coin")];
+}
+H.items = [...document.querySelectorAll("#h-list .it")];
+H.itemT = [CU.s4p1l1.start + .6, CU.s4p1l2.start + .1, CU.s4p1l3.start + .2, CU.s4p2l1.start + .8];
+H.itemT.forEach(x => ev(x, "slide", { vol: .45 }));
+H.info = CU.s4p2l2.start - .2;
+H.web = ev(CU.s4p3l1.start - .3, "slide", { vol: .7 });
+H.miracle = CU.s4p3l2.end;
+ev(H.info + .2, "slide", { vol: .5 });
+function r_hospital(t, lt, dur) {
+  const n = H.paths.length;
+  H.paths.forEach((p, i) => { p.style.strokeDashoffset = 1 - ease(prog(lt, .2 + i * 4.2 / n, .9 + i * 4.2 / n)); });
+  $("h-svg").querySelectorAll(".mtn").forEach(p => p.style.opacity = .3);
+  $("h-sign").setAttribute("opacity", prog(lt, 4.6, 5.4));
+  H.wins.forEach((w, i) => w.style.fill = `rgba(47,127,122,${.45 * prog(lt, 5 + hash(i) * 3, 5.6 + hash(i) * 3)})`);
+  H.items.forEach((it, i) => {
+    const q = easeOut(prog(t, H.itemT[i], H.itemT[i] + .6));
+    it.style.opacity = q; it.style.transform = `translateX(${(1 - q) * 60}px)`;
+    it.style.setProperty("--u", (q * 120) + "px");
+  });
+  const ip = ease(prog(t, H.info, H.info + .6)), wp = ease(prog(t, H.web, H.web + .7));
+  $("h-main").style.opacity = 1 - .85 * ip;
+  $("h-info").style.opacity = ip * (1 - .9 * wp);
+  $("h-arrow").style.strokeDasharray = 1; $("h-arrow").style.strokeDashoffset = 1 - ease(prog(t, H.info + .5, H.info + 1.5));
+  H.coins.forEach((c, i) => {
+    const cyc = (t - H.info - 1.4 - i * .8) / 2.4; const f = cyc - Math.floor(cyc);
+    c.setAttribute("opacity", cyc < 0 ? 0 : Math.sin(f * Math.PI) * 1.4);
+    c.setAttribute("transform", `translate(${lerp(760, 1140, f)} 560)`);
+  });
+  const desat = ease(prog(t, H.miracle + .3, H.miracle + 2));
+  $("h-web").style.opacity = wp;
+  $("h-web").style.transform = `translateY(${(1 - wp) * 120 + desat * 30}px) scale(${1 - desat * .03})`;
+  $("h-web").style.filter = `grayscale(${desat * .85}) brightness(${1 - desat * .35})`;
+  return {};
+}
+
+// ---------- 5 · rahul ----------
+const R = { s: S("rahul") };
+{
+  const chair = (x, base, sw, seatY, backH, col) => `
+    <g>
+      <ellipse cx="${x + sw / 2}" cy="${base + 6}" rx="${sw * .7}" ry="14" fill="rgba(0,0,0,.45)"/>
+      <path d="M${x + 12} ${seatY + 16} L${x + 4} ${base} M${x + sw - 12} ${seatY + 16} L${x + sw - 4} ${base}" stroke="#4b5156" stroke-width="9" stroke-linecap="round"/>
+      <path d="M${x + 24} ${seatY + 16} L${x + 30} ${base - 8} M${x + sw - 24} ${seatY + 16} L${x + sw - 30} ${base - 8}" stroke="#3b4045" stroke-width="7" stroke-linecap="round"/>
+      <path d="M${x + 8} ${seatY - backH} Q${x + sw / 2} ${seatY - backH - 22} ${x + sw - 8} ${seatY - backH} L${x + sw - 14} ${seatY - 10} L${x + 14} ${seatY - 10} Z" fill="${col}"/>
+      <path d="M${x} ${seatY} Q${x + sw / 2} ${seatY - 16} ${x + sw} ${seatY} L${x + sw - 6} ${seatY + 20} Q${x + sw / 2} ${seatY + 30} ${x + 6} ${seatY + 20} Z" fill="${col}" filter="brightness(1.1)"/>
+    </g>`;
+  $("r-chairs").innerHTML = `<rect x="0" y="830" width="1920" height="250" fill="rgba(0,0,0,.25)"/>` +
+    chair(250, 840, 250, 590, 250, "#6f7a80") + chair(560, 840, 190, 660, 170, "#79848a");
+  const g = $("r-grid");
+  ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"].forEach(d => g.insertAdjacentHTML("beforeend", `<div class="wd">${d}</div>`));
+  for (let i = 0; i < 6; i++) g.insertAdjacentHTML("beforeend", `<div class="d e"></div>`);
+  for (let d = 1; d <= 30; d++) g.insertAdjacentHTML("beforeend", `<div class="d" id="rd${d}"><div class="glow"></div><span>${d}</span>${d === 18 ? '<div class="line"></div>' : ""}</div>`);
+}
+R.slip = ev(CU.s5p1l1.start - .2, "slide");
+R.cal = CU.s5p3l1.start - .5;
+ev(R.cal, "slide", { vol: .6 });
+R.mon = [CU.s5p3l1.start + .7, CU.s5p3l1.start + 1.7, CU.s5p3l2.start + .25];
+R.mon.forEach(x => ev(x, "glow"));
+R.red = ev(CU.s5p4l1.end + .35, "thud", { vol: 1.2 });
+function r_rahul(t, lt, dur) {
+  const sp = easeOut(prog(t, R.slip, R.slip + .7)), cp = ease(prog(t, R.cal, R.cal + .8));
+  $("r-slip").style.transform = `translate(${(1 - sp) * 900 + cp * 120}px, ${-cp * 60}px) rotate(${lerp(9, 2, sp) + cp * 4}deg)`;
+  $("r-slip").style.opacity = (sp > 0 ? 1 : 0) * (1 - cp);
+  $("r-cal").style.opacity = cp; $("r-cal").style.transform = `translateY(${(1 - cp) * 40}px) rotate(-1deg)`;
+  [2, 9, 16].forEach((d, i) => { $("rd" + d).querySelector(".glow").style.opacity = .85 * easeOut(prog(t, R.mon[i], R.mon[i] + .5)); $("rd" + d).style.color = t > R.mon[i] + .2 ? "#EDE6D6" : ""; });
+  $("rd18").querySelector(".line").style.width = (easeOut(prog(t, R.red - .25, R.red)) * 72) + "px";
+  $("r-chairs").style.opacity = 1 - .35 * cp;
+  $("r-light").style.opacity = .85 + .15 * Math.sin(lt * .7);
+  return { vig: .25 * prog(t, R.red, R.red + 1) };
+}
+
+// ---------- 6 · question ----------
+const Q = { s: S("question") };
+Q.card = makeCard($("q-card-wrap"), card("Kabir Rao", "Intern", "Rotating · 5 months", "GLM-I-0417", 5), 250, 330, 1.05);
+Q.qs = ["Who saw Rahul?", "Why was he sent home?", "And why does no one want to talk about it?"];
+Q.ty = [typing(Q.qs[0], Q.s + .9, 16), typing(Q.qs[1], CU.s6p2l1.start + .2, 16), typing(Q.qs[2], CU.s6p3l1.start + .2, 18)];
+Q.kLen = V.k1 - V.k0 + 1.2;
+ev(Q.s + .3, "replay_on", { src: V.k0 - .3, len: Q.kLen }); ev(CU.s6p2l1.start + .5, "replay_off");
+ev(Q.s + .15, "lamp");
+function r_question(t, lt, dur) {
+  const lamp = prog(lt, 0, .5);
+  $("q-lamp").style.opacity = lamp * (.92 + .08 * hash(Math.floor(t * 30)));
+  Q.card.style.opacity = .35 + .65 * lamp;
+  Q.card.style.transform = `scale(1.05) rotate(-3deg)`;
+  const wa = prog(lt, .4, 1.2) * (1 - .6 * prog(t, CU.s6p2l1.start, CU.s6p2l1.start + 1.5)) * .55;
+  drawWave($("q-wave"), t, { alpha: wa, envT: x => envAt(V.k0 - .3 + (((x - Q.s - .3) % Q.kLen) + Q.kLen) % Q.kLen), idle: .03 });
+  $("q-qs").innerHTML = Q.ty.map(o => typedHTML(o, t)).join("\n");
+  return { vig: .35 };
+}
+
+// ---------- 7 · people ----------
+const P = { s: S("people") };
+P.people = [
+  ["Dr. Preksha Malhotra", "Consultant", "Pulmonology"],
+  ["Harshit Maheshwari", "Chief of Staff", "Administration"],
+  ["Shalini Dutt", "Billing", "Patient Accounts"],
+  ["Dr. Mahi Maheshwari", "Director", "Administration"],
+  ["Anay Chaudhary", "Finance Officer", "Finance"],
+  ["Himanshu Mehra", "Operations", "Hospital Operations"],
+  ["Dr. Tanya Raheja", "Senior Consultant", "Pulmonology"],
+  ["Sister Angel D'Souza", "Nursing Supervisor", "Chest Ward"],
+];
+// board is 3600x2100; the viewport shows its centre (840..2760, 510..1590) at scale 1
+P.rot = [-2, 1.5, -1, 2.2, 1, -1.6, 1.8, -2.2];
+P.cards = P.people.map((p, i) => {
+  const col = i % 4, row = Math.floor(i / 4);
+  const x = 1027 + col * 395, y = 555 + row * 470;
+  const c = makeCard($("p-board"), `<div class="pin"></div>` + card(p[0], p[1], p[2], "GLM-" + (2100 + i * 37), i + 11), x, y, .78);
+  c.dataset.cx = x + 180; c.dataset.cy = y + 72;
+  return c;
+});
+// ~30 faint blank cards around the central eight
+P.blanks = [];
+for (let gi = 0; gi < 40; gi++) {
+  const i = gi, cx = 180 + 360 * (gi % 10), cy = 262 + 525 * Math.floor(gi / 10);
+  if (cx >= 900 && cx <= 2700 && cy > 500 && cy < 1600) continue;
+  const x = cx - 180 + (hash(gi * 17) - .5) * 60, y = cy - 260 + (hash(gi * 29) - .5) * 60;
+  const b = makeCard($("p-board"), `<div class="slot"></div><div class="band">GRACE LOAN MEMORIAL<small>STAFF IDENTITY CARD</small></div><div class="photo">${SIL}</div><div class="ph"></div><div class="ph" style="width:150px"></div>`, x, y, .78, "blank");
+  b.style.transform = `scale(.78) rotate(${(hash(i * 5) - .5) * 8}deg)`;
+  P.blanks.push(b);
+}
+P.pinT = P.cards.map((_, i) => ev(P.s + .6 + i * 1.05, "pin"));
+P.pairs = [[2, 0], [0, 6], [6, 3], [3, 5], [5, 4]];
+P.strT0 = Math.max(P.pinT[7] + .8, CU.s7p2l1.start - .4);
+$("p-strings").innerHTML = P.pairs.map(() => `<line stroke="#B3261E" stroke-width="5" stroke-linecap="round" opacity=".9"/>`).join("");
+P.lines = [...$("p-strings").querySelectorAll("line")];
+P.pull = CU.s7p3l1.start - 1.6;
+ev(P.strT0, "string", { dur: P.pairs.length * .75 });
+function r_people(t, lt, dur) {
+  P.cards.forEach((c, i) => {
+    const q = prog(t, P.pinT[i] - .35, P.pinT[i]);
+    c.style.opacity = q > 0 ? 1 : 0;
+    c.style.transform = `translateY(${(1 - easeOut(q)) * -70}px) scale(${lerp(.86, .78, easeOut(q))}) rotate(${P.rot[i]}deg)`;
+  });
+  P.lines.forEach((l, i) => {
+    const [a, b] = P.pairs[i], A = P.cards[a].dataset, B = P.cards[b].dataset;
+    const st = P.strT0 + i * .75;
+    let q = ease(prog(t, st, st + .7)); if (i === P.pairs.length - 1) q = Math.min(q, .55);
+    l.setAttribute("x1", A.cx); l.setAttribute("y1", A.cy);
+    l.setAttribute("x2", lerp(+A.cx, +B.cx, q)); l.setAttribute("y2", lerp(+A.cy, +B.cy, q));
+    l.setAttribute("opacity", t > st ? .9 : 0);
+  });
+  const pp = ease(prog(t, P.pull, Math.min(P.pull + 5, SC.people.end - .3)));
+  P.blanks.forEach(b => b.style.opacity = .1 + .1 * pp);
+  $("p-board").style.transform = `scale(${lerp(1.02, .56, pp)})`;
+  return { noPush: true };
+}
+
+// ---------- 8 · clock ----------
+const C = { s: S("clock") };
+C.dates = ["THU 26 NOV 2026", "FRI 27 NOV 2026", "SAT 28 NOV 2026", "SUN 29 NOV 2026", "MON 30 NOV 2026"];
+$("c-roll").innerHTML = C.dates.map(d => `<div style="height:132px">${d}</div>`).join("");
+C.rollT = [C.s + .15, C.s + .4, C.s + .62, C.s + .95];
+C.rollT.forEach((x, i) => ev(x, i === 3 ? "datestamp" : "tick", { vol: i === 3 ? 1 : .8 }));
+{
+  const ticks = [];
+  for (let i = 0; i < 60; i++) { const a = i * 6 * Math.PI / 180, r1 = i % 5 ? 262 : 240; ticks.push(`<line x1="${960 + Math.sin(a) * r1}" y1="${650 - Math.cos(a) * r1}" x2="${960 + Math.sin(a) * 278}" y2="${650 - Math.cos(a) * 278}" stroke="#EDE6D6" stroke-width="${i % 5 ? 3 : 7}"/>`); }
+  $("c-clock").innerHTML = `<g id="c-face" opacity="0"><circle cx="960" cy="650" r="300" fill="#121518" stroke="#EDE6D6" stroke-width="8"/>${ticks.join("")}
+    <line id="c-h" x1="960" y1="650" x2="960" y2="510" stroke="#EDE6D6" stroke-width="14" stroke-linecap="round"/>
+    <line id="c-m" x1="960" y1="650" x2="960" y2="430" stroke="#EDE6D6" stroke-width="9" stroke-linecap="round"/>
+    <line id="c-s" x1="960" y1="690" x2="960" y2="390" stroke="#B3261E" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="960" cy="650" r="12" fill="#B3261E"/></g>`;
+}
+C.face = C.s + 1.9;
+C.end = SC.clock.end;
+C.ticks = []; { let x = C.face + .4, iv = 1.0; while (x < C.end - .05) { C.ticks.push(x); ev(x, "tick", { vol: .55 + .45 * prog(x, C.face, C.end) }); iv = Math.max(.07, iv * .9); x += iv; } }
+ev(C.end, "cut");
+function r_clock(t, lt, dur) {
+  const k = C.rollT.filter(x => t >= x).length;
+  const kk = Math.min(k, 4);
+  $("c-roll").style.transform = `translateY(${-kk * 132}px)`;
+  $("c-stamp").style.borderColor = k >= 4 ? "#B3261E" : "#EDE6D6";
+  $("c-face").setAttribute("opacity", ease(prog(t, C.face, C.face + .6)));
+  const n = C.ticks.filter(x => t >= x).length;
+  const sec = 8 + n, min = 14 + sec / 60, hr = 8 + min / 60;
+  const rot = (id, deg) => $(id).setAttribute("transform", `rotate(${deg} 960 650)`);
+  rot("c-s", sec * 6); rot("c-m", min * 6); rot("c-h", hr * 30);
+  const hh = Math.floor(hr), mm = Math.floor(min) % 60, ss = sec % 60;
+  $("c-ts").textContent = `MON 30-11-2026  ${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}:${String(ss).padStart(2, "0")}`;
+  $("c-ts").style.opacity = prog(t, C.face, C.face + .5);
+  return { grain: lerp(.1, .34, prog(t, C.s, C.end)), shake: k >= 4 ? Math.max(0, 1 - (t - C.rollT[3]) / .3) * .8 : 0, hardOut: true };
+}
+
+// ---------- 9 · end card ----------
+const E = { s: S("end") };
+E.lines = ["Follow the trail.", "Find the truth.", "Get it to the one person who can act — before it's too late."];
+E.ty = []; { let t0 = E.s + .9; E.lines.forEach((l, i) => { const o = typing(l, t0, i < 2 ? 13 : 21, .9); E.ty.push(o); t0 = o.t1 + .55; }); }
+E.clear = E.ty[2].t1 + 1.0;
+E.title = E.clear + .9;
+E.tag = typing("Your investigation begins now.", E.title + .7, 22, .9);
+E.stamp = ev(E.tag.t1 + .15, "stamp");
+E.org = E.stamp + .5;
+function r_end(t, lt, dur) {
+  [...$("e-lines").children].forEach((d, i) => d.innerHTML = typedHTML(E.ty[i], t));
+  $("e-lines").style.opacity = 1 - prog(t, E.clear, E.clear + .5);
+  $("e-title").style.opacity = ease(prog(t, E.title, E.title + .6));
+  $("e-tag").innerHTML = typedHTML(E.tag, t);
+  const sp = prog(t, E.stamp - .08, E.stamp);
+  $("e-tag").style.transform = `scale(${t > E.stamp ? 1 + .04 * Math.max(0, 1 - (t - E.stamp) / .3) : 1})`;
+  $("e-org").style.opacity = ease(prog(t, E.org, E.org + .8));
+  return { shake: t > E.stamp ? Math.max(0, 1 - (t - E.stamp) / .3) * .6 : 0, fadeOut: prog(t, SC.end.end - .9, SC.end.end - .1) };
+}
+
+const RENDER = { voicemail: r_voicemail, title: r_title, kabir: r_kabir, hospital: r_hospital, rahul: r_rahul,
+  question: r_question, people: r_people, clock: r_clock, end: r_end };
+const HARD = new Set(["clock"]); // scenes that end on a hard cut
+
+// ---------- film grain ----------
+const gctx = $("grain").getContext("2d"), gimg = gctx.createImageData(960, 540);
+let seed = 1;
+function grain(frame, amt) {
+  seed = frame * 7919 + 13;
+  const d = gimg.data;
+  for (let i = 0; i < d.length; i += 4) {
+    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+    const v = (seed >> 16) & 255;
+    d[i] = d[i + 1] = d[i + 2] = v; d[i + 3] = 255;
+  }
+  gctx.putImageData(gimg, 0, 0);
+  $("grain").style.opacity = amt;
+}
+
+window.EVENTS = EVENTS;
+window.render = function (t) {
+  const frame = Math.round(t * 30);
+  let cur = T.scenes.find(s => t >= s.start && t < s.end) || T.scenes[T.scenes.length - 1];
+  document.querySelectorAll(".scene").forEach(el => el.style.display = el.id === "s-" + cur.id ? "block" : "none");
+  const lt = t - cur.start, dur = cur.end - cur.start;
+  const fx = RENDER[cur.id](t, lt, dur) || {};
+  const cam = document.querySelector("#s-" + cur.id + " .cam");
+  const push = fx.noPush ? 1 : 1 + .045 * ease(prog(lt, 0, dur));
+  const sh = (fx.shake || 0) * 10;
+  cam.style.transform = `translate(${(hash(frame * 3) - .5) * sh}px, ${(hash(frame * 5 + 1) - .5) * sh}px) scale(${push})`;
+  // dip to black (0.5 s) at scene boundaries, except hard cuts
+  let f = 0;
+  T.scenes.forEach((s, i) => {
+    if (i === 0) return;
+    const prev = T.scenes[i - 1];
+    if (HARD.has(prev.id)) return;
+    f = Math.max(f, 1 - Math.abs(t - s.start) / .28);
+  });
+  f = Math.max(f, 1 - prog(t, 0, .6), fx.fadeOut || 0);
+  $("fade").style.opacity = clamp(f);
+  const sub = $("sub");
+  sub.textContent = fx.sub || ""; sub.style.opacity = fx.sub ? fx.so : 0;
+  $("vignette").style.opacity = .85 + (fx.vig || 0) * .5;
+  $("vignette").style.background = `radial-gradient(ellipse ${75 - (fx.vig || 0) * 25}% ${70 - (fx.vig || 0) * 20}% at 50% 50%, transparent 55%, rgba(0,0,0,.78))`;
+  grain(frame, fx.grain ?? .1);
+};
+</script>
+</body>
+</html>

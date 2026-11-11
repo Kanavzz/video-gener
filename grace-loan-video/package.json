@@ -1,0 +1,13 @@
+{
+  "name": "grace-loan-case-video",
+  "private": true,
+  "scripts": {
+    "build": "python3 build_audio.py build && node render.js build out/grace_loan_opening.mp4"
+  },
+  "dependencies": {
+    "@fontsource/courier-prime": "^5.0.0",
+    "@fontsource/inter": "^5.0.0",
+    "@fontsource/special-elite": "^5.0.0",
+    "playwright": "1.56.1"
+  }
+}
