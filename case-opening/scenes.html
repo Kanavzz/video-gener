@@ -1,0 +1,479 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="node_modules/@fontsource/inter/400.css">
+<link rel="stylesheet" href="node_modules/@fontsource/inter/600.css">
+<link rel="stylesheet" href="node_modules/@fontsource/special-elite/400.css">
+<link rel="stylesheet" href="node_modules/@fontsource/courier-prime/400.css">
+<link rel="stylesheet" href="node_modules/@fontsource/courier-prime/700.css">
+<style>
+:root { --bg: #0B0D10; --paper: #EDE6D6; --teal: #2F7F7A; --red: #B3261E; --dim: #7d8590; --ink: #1d1a16; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); color: var(--paper);
+  font-family: Inter, sans-serif; }
+#stage { position: absolute; inset: 0; }
+.scene { position: absolute; inset: 0; display: none; overflow: hidden; }
+.type { font-family: "Special Elite", "Courier Prime", monospace; }
+.mono { font-family: "Courier Prime", monospace; }
+.cursor { display: inline-block; width: .55em; height: 1em; background: currentColor; vertical-align: -0.12em; margin-left: 4px; }
+
+/* overlays */
+#grain { position: absolute; inset: 0; width: 1920px; height: 1080px; z-index: 80; opacity: .09; mix-blend-mode: screen; pointer-events: none; }
+#vig { position: absolute; inset: 0; z-index: 79; background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,.7)); }
+#flick { position: absolute; inset: 0; z-index: 81; background: #000; opacity: 0; }
+#cap { position: absolute; left: 50%; bottom: 60px; transform: translateX(-50%); max-width: 1560px; z-index: 90;
+  text-align: center; font-weight: 600; font-size: 44px; line-height: 1.3; padding: 14px 34px;
+  background: rgba(5, 6, 8, .82); border-radius: 10px; color: #fff; display: none; }
+#cap small { display: block; font-family: "Courier Prime", monospace; font-weight: 700; font-size: 22px;
+  letter-spacing: 3px; color: #7fc4be; margin-bottom: 4px; }
+#cap.hi { font-style: italic; }
+
+/* paper + stamp */
+.paper { background: var(--paper); color: var(--ink); border-radius: 4px; box-shadow: 0 30px 70px rgba(0,0,0,.6);
+  background-image: radial-gradient(circle at 20% 30%, rgba(120,100,60,.08), transparent 40%),
+    radial-gradient(circle at 80% 70%, rgba(120,100,60,.10), transparent 45%); }
+.stamp { position: absolute; font-family: "Special Elite", monospace; color: var(--red); border: 8px solid var(--red);
+  border-radius: 10px; padding: 8px 34px; letter-spacing: 8px; white-space: nowrap; mix-blend-mode: normal;
+  -webkit-mask-image: radial-gradient(circle at 30% 40%, #000 60%, rgba(0,0,0,.75) 61%, #000 70%);
+  opacity: 0; }
+
+/* ---------- 1 voicemail ---------- */
+#vmtext { position: absolute; left: 90px; top: 80px; font-size: 38px; line-height: 1.6; color: #b9d9d6; }
+#vmtext div:first-child { color: var(--paper); }
+#wave { position: absolute; left: 160px; top: 380px; width: 1600px; height: 320px; }
+#vmbar { position: absolute; left: 160px; top: 760px; width: 1600px; font-size: 28px; color: var(--dim); }
+#vmbar .track { height: 6px; background: #22282f; border-radius: 3px; margin-top: 14px; }
+#vmbar .fill { height: 6px; background: var(--teal); border-radius: 3px; width: 0; }
+#vmstat { position: absolute; right: 90px; top: 92px; font-size: 30px; letter-spacing: 3px; }
+#vmstat i { display: inline-block; width: 18px; height: 18px; border-radius: 50%; background: var(--red); margin-right: 12px; }
+
+/* ---------- 2 title ---------- */
+#title { position: absolute; top: 420px; width: 100%; text-align: center; font-size: 100px; letter-spacing: 4px; white-space: nowrap; }
+#stamp2 { left: 50%; top: 600px; font-size: 92px; }
+
+/* ---------- 3 kabir ---------- */
+.folder { position: absolute; width: 520px; height: 64px; border-radius: 4px 4px 2px 2px; }
+#idcard { position: absolute; width: 640px; height: 400px; padding: 0; overflow: hidden; }
+#idcard .hd, .idb .hd { background: var(--teal); color: #fff; font-family: "Courier Prime", monospace; font-weight: 700;
+  font-size: 20px; letter-spacing: 2px; padding: 16px 26px; white-space: nowrap; }
+.idrow { display: flex; gap: 30px; padding: 28px 26px; }
+.sil { width: 190px; height: 230px; background: #cfc6b2; border: 2px solid #b4aa93; position: relative; overflow: hidden; flex: none; }
+.sil svg { position: absolute; bottom: 0; left: 0; }
+.idf { font-family: "Courier Prime", monospace; font-size: 22px; color: #6a6253; letter-spacing: 2px; }
+.idv { font-family: "Special Elite", monospace; font-size: 46px; color: var(--ink); margin: 2px 0 18px; }
+.idv.s { font-size: 34px; }
+#form { position: absolute; right: 120px; top: 120px; width: 760px; height: 620px; padding: 40px 50px; }
+#form h3 { font-family: "Courier Prime", monospace; font-size: 28px; letter-spacing: 3px; color: var(--teal); margin-bottom: 26px; }
+.fr { display: flex; align-items: baseline; border-bottom: 2px solid #b8ae98; padding: 16px 0 8px; font-size: 26px; }
+.fr span { font-family: "Courier Prime", monospace; width: 230px; color: #6a6253; letter-spacing: 1px; flex: none; }
+.fr b { font-family: "Courier Prime", monospace; font-weight: 400; color: #1f3d6b; font-size: 30px; }
+#sticky { position: absolute; width: 380px; height: 300px; background: #e8d98a; color: #2a2414;
+  font-family: "Special Elite", monospace; font-size: 42px; line-height: 1.3; padding: 50px 34px;
+  box-shadow: 0 20px 40px rgba(0,0,0,.55); }
+#sticky::before { content: ""; position: absolute; top: -18px; left: 130px; width: 120px; height: 40px;
+  background: rgba(237,230,214,.55); transform: rotate(-3deg); }
+#s3tag { position: absolute; left: 120px; top: 90px; font-size: 26px; letter-spacing: 4px; color: var(--dim); }
+
+/* ---------- 4 hospital ---------- */
+#hosp { position: absolute; left: 110px; top: 110px; }
+.brochure { position: absolute; padding: 18px 30px; font-size: 38px; border-left: 6px solid var(--teal);
+  background: rgba(237,230,214,.08); color: var(--paper); white-space: nowrap; opacity: 0; }
+.brochure.q { font-family: "Special Elite", monospace; font-size: 44px; }
+#flow { position: absolute; left: 0; width: 100%; top: 660px; display: flex; justify-content: center; align-items: center; gap: 40px; opacity: 0; }
+#flow .ic { width: 210px; text-align: center; font-family: "Courier Prime", monospace; font-size: 24px; letter-spacing: 2px; color: var(--dim); }
+#flow .arrow { width: 640px; text-align: center; font-size: 32px; position: relative; padding-bottom: 30px; }
+#flow .arrow::after { content: ""; position: absolute; left: 0; right: 30px; bottom: 6px; height: 4px; background: var(--paper); }
+#flow .arrow::before { content: ""; position: absolute; right: 0; bottom: -8px; border-left: 34px solid var(--paper);
+  border-top: 16px solid transparent; border-bottom: 16px solid transparent; }
+#flow .coin { position: absolute; bottom: -6px; width: 28px; height: 28px; border-radius: 50%; background: var(--teal); border: 3px solid var(--paper); }
+#rahul { position: absolute; left: 50%; top: 380px; transform: translateX(-50%); text-align: center; opacity: 0; }
+#rahul .type { font-size: 64px; }
+#ecg { position: absolute; left: 0; top: 560px; }
+
+/* ---------- 5 you ---------- */
+#card5 { position: absolute; width: 640px; height: 400px; perspective: 2000px; }
+#card5 .inner { position: absolute; inset: 0; transform-style: preserve-3d; }
+#card5 .face { position: absolute; inset: 0; backface-visibility: hidden; overflow: hidden; }
+#card5 .back { transform: rotateY(180deg); }
+.blank { width: 300px; border-bottom: 3px solid var(--ink); height: 52px; margin: 2px 0 18px; }
+#you { font-family: "Special Elite", monospace; font-size: 120px; color: var(--red); line-height: 1; margin-top: -6px; }
+#typed5 { position: absolute; left: 860px; top: 200px; width: 960px; font-size: 52px; line-height: 1.45; }
+#clock { position: absolute; left: 230px; top: 650px; display: flex; align-items: center; gap: 40px; opacity: 0; }
+#clock .digits { font-family: "Courier Prime", monospace; font-weight: 700; font-size: 120px; letter-spacing: 4px; }
+#final5 { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding-bottom: 440px; font-size: 72px; line-height: 1.5; opacity: 0; }
+#stamp5 { left: 50%; top: 545px; font-size: 60px; z-index: 5; }
+#endcard { position: absolute; inset: 0; background: #000; display: none; align-items: center; justify-content: center;
+  flex-direction: column; gap: 28px; z-index: 85; }
+#endcard .ph { font-family: "Courier Prime", monospace; font-size: 54px; letter-spacing: 6px; color: var(--paper); }
+#endcard .sm { font-family: "Courier Prime", monospace; font-size: 26px; letter-spacing: 8px; color: var(--teal); }
+</style>
+</head>
+<body>
+<div id="stage">
+
+<!-- 1 -->
+<div class="scene" id="s1">
+  <div id="vmtext" class="mono"><div></div><div></div><div></div></div>
+  <div id="vmstat" class="mono"><i></i><span>PLAYING</span></div>
+  <canvas id="wave" width="1600" height="320"></canvas>
+  <div id="vmbar" class="mono"><div style="display:flex;justify-content:space-between"><span id="vmt">00:00</span><span>VOICEMAIL · 31/47</span><span id="vml">00:00</span></div>
+    <div class="track"><div class="fill"></div></div></div>
+</div>
+
+<!-- 2 -->
+<div class="scene" id="s2">
+  <div id="title" class="type"></div>
+  <div id="stamp2" class="stamp">CASE OPEN</div>
+</div>
+
+<!-- 3 -->
+<div class="scene" id="s3">
+  <div id="files"></div>
+  <div id="s3tag" class="mono">PERSONNEL FILE · 001</div>
+  <div id="form" class="paper">
+    <h3>PATIENT INTAKE — DATA ENTRY</h3>
+    <div class="fr"><span>FILE NO.</span><b data-v="GLM/2026/11/0418"></b></div>
+    <div class="fr"><span>DEPARTMENT</span><b data-v="OPD — General Medicine"></b></div>
+    <div class="fr"><span>VISIT DATE</span><b data-v="__/11/2026"></b></div>
+    <div class="fr"><span>SCHEME</span><b data-v="State Pro Bono Care"></b></div>
+    <div class="fr"><span>ENTERED BY</span><b data-v="K. Rao (Intern)"></b></div>
+    <div class="fr"><span>STATUS</span><b data-v="FILED"></b></div>
+  </div>
+  <div id="idcard" class="paper">
+    <div class="hd">GRACE LOAN MEMORIAL HOSPITAL · STAFF ID</div>
+    <div class="idrow">
+      <div class="sil"><svg width="190" height="230" viewBox="0 0 190 230"><circle cx="95" cy="88" r="46" fill="#2a2a2a"/><path d="M10 230 C14 160 52 140 95 140 C138 140 176 160 180 230 Z" fill="#2a2a2a"/></svg></div>
+      <div><div class="idf">NAME</div><div class="idv">KABIR RAO</div>
+        <div class="idf">ROLE</div><div class="idv s">Intern</div>
+        <div class="idf">TENURE</div><div class="idv s">5 months</div></div>
+    </div>
+  </div>
+  <div id="sticky">Clear old voicemails — 1 month</div>
+</div>
+
+<!-- 4 -->
+<div class="scene" id="s4">
+  <svg id="hosp" width="1700" height="520" viewBox="0 0 1700 520" fill="none" stroke-linecap="round"></svg>
+  <div class="brochure" id="b1">Rajpur Road, Dehradun</div>
+  <div class="brochure" id="b2">210 beds</div>
+  <div class="brochure q" id="b3">“Healing without barriers”</div>
+  <div class="brochure" id="b4">Empanelled: State Pro Bono Care Scheme</div>
+  <div id="flow">
+    <div class="ic"><svg width="150" height="130" viewBox="0 0 150 130" stroke="#EDE6D6" stroke-width="5" fill="none"><path d="M10 48 L75 10 L140 48 Z"/><path d="M22 52 V108 M50 52 V108 M100 52 V108 M128 52 V108"/><path d="M8 112 H142 M4 124 H146"/></svg><div>GOVERNMENT</div></div>
+    <div class="arrow">fixed amount per patient treated<div class="coin"></div></div>
+    <div class="ic"><svg width="150" height="130" viewBox="0 0 150 130" stroke="#2F7F7A" stroke-width="5" fill="none"><rect x="20" y="30" width="110" height="94"/><path d="M75 44 V84 M55 64 H95" stroke="#EDE6D6"/><path d="M62 124 V100 H88 V124"/></svg><div>HOSPITAL</div></div>
+  </div>
+  <div id="rahul"><div class="type">Rahul · 12</div></div>
+  <svg id="ecg" width="1920" height="200" viewBox="0 0 1920 200"><path id="ecgp" stroke="#B3261E" stroke-width="5" fill="none"/></svg>
+</div>
+
+<!-- 5 -->
+<div class="scene" id="s5">
+  <div id="card5"><div class="inner">
+    <div class="face paper">
+      <div class="hd" style="background:var(--teal);color:#fff;font-family:'Courier Prime';font-weight:700;font-size:20px;letter-spacing:2px;padding:16px 26px;white-space:nowrap">GRACE LOAN MEMORIAL HOSPITAL · STAFF ID</div>
+      <div class="idrow">
+        <div class="sil"><svg width="190" height="230" viewBox="0 0 190 230"><circle cx="95" cy="88" r="46" fill="#2a2a2a"/><path d="M10 230 C14 160 52 140 95 140 C138 140 176 160 180 230 Z" fill="#2a2a2a"/></svg></div>
+        <div><div class="idf">NAME</div><div class="idv">KABIR RAO</div>
+          <div class="idf">ROLE</div><div class="idv s">Intern</div>
+          <div class="idf">TENURE</div><div class="idv s">5 months</div></div>
+      </div>
+    </div>
+    <div class="face back paper">
+      <div class="hd" style="background:var(--teal);color:#fff;font-family:'Courier Prime';font-weight:700;font-size:20px;letter-spacing:2px;padding:16px 26px;white-space:nowrap">GRACE LOAN MEMORIAL HOSPITAL · STAFF ID</div>
+      <div class="idrow">
+        <div class="sil"><svg width="190" height="230" viewBox="0 0 190 230"><circle cx="95" cy="88" r="46" fill="#2a2a2a"/><path d="M10 230 C14 160 52 140 95 140 C138 140 176 160 180 230 Z" fill="#2a2a2a"/></svg></div>
+        <div><div class="idf">NAME</div><div class="blank"></div><div id="you">YOU</div></div>
+      </div>
+    </div>
+  </div></div>
+  <div id="typed5" class="type"></div>
+  <div id="clock"><svg width="170" height="170" viewBox="0 0 170 170"><circle cx="85" cy="85" r="74" stroke="#2F7F7A" stroke-width="8" fill="none"/><circle cx="85" cy="85" r="74" id="ring" stroke="#EDE6D6" stroke-width="8" fill="none" stroke-dasharray="465" transform="rotate(-90 85 85)"/><line id="hand" x1="85" y1="85" x2="85" y2="28" stroke="#EDE6D6" stroke-width="6" stroke-linecap="round"/><circle cx="85" cy="85" r="7" fill="#EDE6D6"/></svg>
+    <div class="digits">01:30:00</div></div>
+  <div id="final5" class="type"><div></div><div></div><div></div></div>
+  <div id="stamp5" class="stamp">INVESTIGATION OPEN</div>
+</div>
+
+<div id="endcard"><div class="sm">PRESENTED BY</div><div class="ph">[EVENT / ORGANISER NAME]</div></div>
+<div id="cap"></div>
+<canvas id="grain" width="960" height="540"></canvas>
+<div id="vig"></div>
+<div id="flick"></div>
+</div>
+
+<script>
+const TL = window.TIMELINE;
+const E = TL.events;
+const $ = s => document.querySelector(s);
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const ease = x => { x = clamp(x); return 1 - Math.pow(1 - x, 3); };
+const back = x => { x = clamp(x); const c = 1.7; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };
+const prog = (t, a, d) => clamp((t - a) / d);
+const typed = (id, t) => { const b = TL.typing.find(x => x.id === id); const n = Math.floor((t - b.start) * b.cps); return n <= 0 ? "" : b.text.slice(0, n); };
+const typedAt = (text, start, t, cps = 32) => { const n = Math.floor((t - start) * cps); return n <= 0 ? "" : text.slice(0, n); };
+const cur = (t, on = true) => on && Math.floor(t * 2) % 2 === 0 ? '<span class="cursor"></span>' : '<span class="cursor" style="opacity:0"></span>';
+const fmt = s => { s = Math.max(0, Math.floor(s)); return String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0"); };
+function rnd(seed) { let x = Math.sin(seed * 9301 + 49297) * 233280; return x - Math.floor(x); }
+
+/* stamp: slam from large, settle, short shake */
+function stampAt(el, t, at, rot) {
+  const p = prog(t, at - 0.12, 0.12);
+  if (t < at - 0.12) { el.style.opacity = 0; return 0; }
+  const s = 2.4 - 1.4 * ease(p);
+  el.style.opacity = clamp(p * 1.4) * 0.92;
+  el.style.transform = `translateX(-50%) rotate(${rot}deg) scale(${s})`;
+  return t >= at && t < at + 0.25 ? (1 - (t - at) / 0.25) : 0;   // shake amount
+}
+
+/* film grain frames */
+const grains = [];
+for (let k = 0; k < 6; k++) {
+  const c = document.createElement("canvas"); c.width = 960; c.height = 540;
+  const g = c.getContext("2d"); const im = g.createImageData(960, 540);
+  for (let i = 0; i < im.data.length; i += 4) { const v = Math.random() * 255; im.data[i] = im.data[i + 1] = im.data[i + 2] = v; im.data[i + 3] = 255; }
+  g.putImageData(im, 0, 0); grains.push(c);
+}
+const grainCtx = $("#grain").getContext("2d");
+
+/* scene 3 folders behind */
+(function () {
+  const f = $("#files"); const cols = ["#2b2620", "#3a3226", "#2f3a39", "#4a3f2e", "#26302f"];
+  for (let i = 0; i < 26; i++) {
+    const d = document.createElement("div"); d.className = "folder";
+    const left = i < 13; const k = i % 13;
+    d.style.left = (left ? 40 + rnd(i) * 40 : 1360 + rnd(i) * 40) + "px";
+    d.style.top = (1030 - k * 62) + "px";
+    d.style.background = cols[i % 5]; d.style.transform = `rotate(${(rnd(i + 3) - .5) * 4}deg)`;
+    d.style.borderTop = "6px solid " + (i === 7 ? "#B3261E" : "#5b513f");
+    d.dataset.k = k; f.appendChild(d);
+  }
+})();
+
+/* scene 4 hospital line drawing */
+(function () {
+  const svg = $("#hosp"); const P = [];
+  const L = (d, c = "#EDE6D6", w = 4) => P.push(`<path d="${d}" stroke="${c}" stroke-width="${w}"/>`);
+  L("M60 500 H1640", "#7d8590", 3);
+  L("M360 500 V170 H1340 V500");                       // main block
+  L("M560 170 V90 H1140 V170");                        // top storey
+  L("M180 500 V290 H360"); L("M1340 290 H1520 V500"); // wings
+  L("M760 90 V40 H940 V90", "#2F7F7A");                // sign block
+  L("M850 50 V80 M835 65 H865", "#2F7F7A", 6);         // cross
+  for (let r = 0; r < 4; r++) for (let c = 0; c < 9; c++) {
+    if (r === 3 && c >= 3 && c <= 5) continue;
+    const x = 400 + c * 104, y = 200 + r * 74; L(`M${x} ${y} h64 v42 h-64 Z`, r === 0 && c === 4 ? "#2F7F7A" : "#9aa3ad", 3);
+  }
+  for (let c = 0; c < 4; c++) L(`M${600 + c * 135} 110 h80 v40 h-80 Z`, "#9aa3ad", 3);
+  for (let c = 0; c < 2; c++) { L(`M${210 + c * 80} 330 h46 v40 h-46 Z`, "#9aa3ad", 3); L(`M${1380 + c * 80} 330 h46 v40 h-46 Z`, "#9aa3ad", 3); }
+  L("M760 500 V430 H940 V500", "#2F7F7A");              // entrance
+  L("M720 430 H980", "#2F7F7A");
+  svg.innerHTML = P.join("");
+  svg.querySelectorAll("path").forEach(p => { const l = p.getTotalLength(); p.dataset.l = l; p.style.strokeDasharray = l; p.style.strokeDashoffset = l; });
+})();
+
+function show(id) { document.querySelectorAll(".scene").forEach(s => s.style.display = s.id === id ? "block" : "none"); }
+
+/* ---------------- scenes ---------------- */
+function scene1(t) {
+  const lines = document.querySelectorAll("#vmtext div");
+  TL.s1_lines.forEach((l, i) => {
+    const b = TL.typing[i]; const s = typed(`s1_${i}`, t);
+    const typing = t >= b.start && s.length < l.length;
+    const last = i === 2 && s.length === l.length && t < E.vm_start;
+    lines[i].innerHTML = s + (typing || last ? cur(t) : "");
+  });
+  const live = t >= E.vm_start - 0.2 && t < E.dead;
+  $("#vmstat").style.opacity = t < E.beep1 ? 0 : 1;
+  $("#vmstat span").textContent = t >= E.dead ? "MESSAGE ENDED" : (t >= E.vm_start ? "PLAYING" : "CONNECTING");
+  $("#vmstat i").style.opacity = t >= E.dead ? 0.25 : (Math.floor(t * 2) % 2 ? 1 : 0.35);
+  // waveform
+  const c = $("#wave").getContext("2d"); c.clearRect(0, 0, 1600, 320);
+  const fade = clamp((t - 0.3) / 0.9) * (t > E.beep2 + 0.4 ? clamp(1 - (t - E.beep2 - 0.4) / 0.6) : 1);
+  c.globalAlpha = fade;
+  const N = 100, f = Math.floor(t * 30);
+  for (let i = 0; i < N; i++) {
+    // newest sample on the right; scrolls left
+    const fi = f - (N - 1 - i);
+    let v = live && fi >= 0 ? (E.voice_env[fi] || 0) : 0;
+    v = v * (0.55 + 0.45 * rnd(fi * 7.1 + i));
+    const h = Math.max(4, v * 290);
+    c.fillStyle = i === N - 1 && live ? "#EDE6D6" : "#2F7F7A";
+    c.fillRect(i * 16 + 3, 160 - h / 2, 9, h);
+  }
+  c.globalAlpha = 1;
+  const len = E.vm_end - E.vm_start;
+  $("#vmt").textContent = fmt(clamp(t - E.vm_start, 0, len));
+  $("#vml").textContent = fmt(len);
+  $(".fill").style.width = (clamp((t - E.vm_start) / len) * 100) + "%";
+  $("#vmbar").style.opacity = fade;
+}
+
+function scene2(t, sc) {
+  const s = typed("title", t); const done = s.length === TL.title.length;
+  $("#title").innerHTML = s + cur(t, !done || t < E.stamp_title);
+  return stampAt($("#stamp2"), t, E.stamp_title, -7);
+}
+
+function scene3(t, sc) {
+  const S = E.s3_sentences, d = sc.end - sc.start, lt = t - sc.start;
+  // files rise in, stagger
+  document.querySelectorAll(".folder").forEach((el, i) => {
+    const p = ease(prog(lt, 0.1 + el.dataset.k * 0.06, 0.6));
+    el.style.opacity = p * 0.9; el.style.marginTop = ((1 - p) * 60) + "px";
+  });
+  $("#s3tag").style.opacity = ease(prog(lt, 0.4, 0.6));
+  // ID card slides in from left, then shifts left/up when the form arrives
+  const pin = back(prog(lt, 0.2, 0.9));
+  const toSide = ease(prog(t, S[2].start - 0.4, 0.9));
+  const cx = 640 - toSide * 280;
+  $("#idcard").style.left = (cx - 320 + (1 - pin) * -1000) + "px";
+  $("#idcard").style.top = (300 - toSide * 40) + "px";
+  $("#idcard").style.transform = `rotate(${-2 + toSide * -1}deg) scale(${1 - toSide * 0.05})`;
+  // data entry form fills itself
+  const fp = ease(prog(t, S[2].start - 0.2, 0.7));
+  $("#form").style.opacity = fp; $("#form").style.transform = `translateY(${(1 - fp) * 80}px) rotate(1.5deg)`;
+  document.querySelectorAll("#form b").forEach((b, i) => {
+    const st = S[2].start + 0.5 + i * 0.75; b.innerHTML = typedAt(b.dataset.v, st, t, 26);
+  });
+  // sticky note
+  const sp = back(prog(t, S[3].start + 0.2, 0.6));
+  const st = $("#sticky"); st.style.left = "1000px"; st.style.top = (560 + (1 - sp) * 500) + "px";
+  st.style.opacity = clamp(sp * 2); st.style.transform = `rotate(${-6 + sp * 2}deg)`;
+  // last sentence: slow push in + darken
+  const pz = prog(t, S[4].start, d);
+  $("#s3").style.transform = `scale(${1 + 0.06 * ease(pz)})`;
+  $("#s3").style.filter = `brightness(${1 - 0.35 * ease(prog(t, S[4].start, 3))})`;
+  return 0;
+}
+
+function scene4(t, sc) {
+  const S = E.s4_sentences, lt = t - sc.start;
+  // draw facade
+  const paths = document.querySelectorAll("#hosp path");
+  paths.forEach((p, i) => { const pr = ease(prog(lt, 0.15 + i * 0.045, 0.6)); p.style.strokeDashoffset = p.dataset.l * (1 - pr); });
+  const ups = [[ "#b1", S[1].start, 140, 700 ], [ "#b2", S[1].start + 1.1, 1280, 700 ], [ "#b3", S[2].start, 140, 820 ], [ "#b4", S[3].start + 0.2, 1000, 820 ]];
+  const flowOn = S[4].start - 0.2;
+  const toFlow = ease(prog(t, flowOn, 0.6));
+  ups.forEach(([id, at, x, y]) => {
+    const p = ease(prog(t, at, 0.5)); const el = $(id);
+    el.style.left = x + "px"; el.style.top = (y + (1 - p) * 30) + "px";
+    el.style.opacity = p * (1 - toFlow);
+  });
+  $("#hosp").style.transform = `translateY(${-toFlow * 60}px) scale(${1 - toFlow * 0.12})`;
+  $("#hosp").style.transformOrigin = "50% 0";
+  // money flow icons
+  const rah = S[5].start - 0.1;
+  const fo = ease(prog(t, flowOn, 0.6)) * (1 - ease(prog(t, rah, 0.6)));
+  $("#flow").style.opacity = fo;
+  const cp = ((t - flowOn) % 1.6) / 1.6;
+  $("#flow .coin").style.left = (cp * 560) + "px";
+  $("#flow .coin").style.opacity = t > flowOn + 0.5 ? Math.sin(Math.PI * cp) : 0;
+  // Rahul: everything dims, ECG line flatlines on "dead"
+  const dimP = ease(prog(t, rah, 0.8));
+  $("#hosp").style.opacity = 1 - 0.85 * dimP;
+  const rp = ease(prog(t, rah + 0.3, 0.8));
+  const dead = E.dead_word;
+  const goneP = ease(prog(t, dead + 0.15, 0.4));
+  $("#rahul").style.opacity = rp * (1 - goneP * 0.6);
+  // ecg path: scrolling heartbeat that becomes a flat line after "dead"
+  const ecgOn = ease(prog(t, rah + 0.4, 0.6));
+  $("#ecg").style.opacity = ecgOn * (1 - ease(prog(t, sc.end - 0.5, 0.5)));
+  let d = "", period = 260;
+  const head = Math.min(1500, 200 + (t - rah) * 520);  // x of the drawing head, then scrolls
+  for (let x = 0; x <= head; x += 4) {
+    const tx = t - (head - x) / 520;  // time at which this x was drawn
+    let y = 100;
+    if (tx < dead) {
+      const ph = (((tx * 520 + 40) % period) + period) % period / period;
+      if (ph > .40 && ph < .44) y = 100 - (ph - .40) / .04 * 20;
+      else if (ph >= .44 && ph < .48) y = 80 + (ph - .44) / .04 * 110;
+      else if (ph >= .48 && ph < .52) y = 190 - (ph - .48) / .04 * 180;
+      else if (ph >= .52 && ph < .56) y = 10 + (ph - .52) / .04 * 90;
+    }
+    d += (x === 0 ? "M" : "L") + x + " " + y.toFixed(1);
+  }
+  $("#ecgp").setAttribute("d", d);
+  return 0;
+}
+
+function scene5(t, sc) {
+  const lt = t - sc.start;
+  const fin = E.s5_final[0] - 0.15;
+  const toFin = ease(prog(t, fin, 0.5));
+  // card: centre -> flip -> slide to the left
+  const flip = ease(prog(lt, 0.25, 0.9));
+  const side = ease(prog(t, E.s5_type[0] + 0.6, 0.8));
+  const card = $("#card5");
+  card.style.left = (640 - side * 500) + "px"; card.style.top = (300 - side * 120) + "px";
+  card.style.opacity = clamp(lt / 0.3) * (1 - toFin);
+  card.style.transform = `scale(${1 + 0.06 * Math.sin(Math.PI * flip)})`;
+  card.querySelector(".inner").style.transform = `rotateY(${flip * 180}deg)`;
+  // YOU stamp on the card back
+  const yp = prog(t, sc.start + 1.0, 0.15);
+  $("#you").style.opacity = yp; $("#you").style.transform = `scale(${2 - ease(yp)})`;
+  // typed lines
+  let html = "";
+  TL.s5_typed.forEach((l, i) => {
+    const st = E.s5_type[i]; const s = typedAt(l, st, t, 34);
+    if (!s) return;
+    const typing = s.length < l.length || (i === TL.s5_typed.length - 1 || t < E.s5_type[i + 1]);
+    html += `<div>${s}${typing ? cur(t) : ""}</div>`;
+  });
+  $("#typed5").innerHTML = html; $("#typed5").style.opacity = 1 - toFin;
+  // clock
+  const cs = E.clock_start, cp = ease(prog(t, cs - 0.2, 0.5));
+  $("#clock").style.opacity = cp;
+  $("#clock").style.left = (230 + toFin * 345) + "px"; $("#clock").style.top = (650 + toFin * 80) + "px";
+  const el = Math.max(0, Math.floor(t - cs));
+  const rem = 5400 - el;
+  $("#clock .digits").textContent = [Math.floor(rem / 3600), Math.floor(rem / 60) % 60, rem % 60].map(v => String(v).padStart(2, "0")).join(":");
+  $("#hand").setAttribute("transform", `rotate(${el * 6} 85 85)`);
+  $("#ring").style.strokeDashoffset = 465 * (el % 60) / 60;
+  // final card
+  const fp = ease(prog(t, fin, 0.5));
+  $("#final5").style.opacity = fp;
+  const fl = $("#final5").children;
+  TL.s5_final.forEach((l, i) => {
+    const s = typedAt(l, E.s5_final[i], t, 30);
+    const last = i === 2 ? t < E.now_word : (t < E.s5_final[i + 1]);
+    fl[i].innerHTML = s ? s + (last ? cur(t) : "") : "&nbsp;";
+    fl[i].style.color = i === 2 ? "#EDE6D6" : "#b9b2a3";
+  });
+  return stampAt($("#stamp5"), t, E.now_word + 0.05, -5);
+}
+
+const SC = { 1: scene1, 2: scene2, 3: scene3, 4: scene4, 5: scene5 };
+
+window.render = function (t) {
+  const sc = TL.scenes.find(s => t < s.end) || TL.scenes[TL.scenes.length - 1];
+  show("s" + sc.id);
+  const shake = SC[sc.id](t, sc) || 0;
+  $("#stage").style.transform = shake ? `translate(${(rnd(t * 97) - .5) * 26 * shake}px, ${(rnd(t * 53) - .5) * 26 * shake}px)` : "";
+  // scene transitions: short dip to black at each boundary
+  const s0 = sc.start, s1 = sc.end;
+  let blk = 0;
+  if (sc.id > 1) blk = Math.max(blk, 1 - clamp((t - s0) / 0.35));
+  if (sc.id < 5) blk = Math.max(blk, clamp((t - (s1 - 0.3)) / 0.3));
+  if (sc.id === 1) blk = Math.max(blk, 1 - clamp(t / 0.25));
+  // cut to black after "now", end card
+  const endOn = t >= E.cut_black;
+  $("#endcard").style.display = endOn ? "flex" : "none";
+  $("#endcard").style.opacity = clamp((t - E.cut_black - 0.5) / 0.6);
+  blk = Math.max(blk, rnd(Math.floor(t * 30)) > 0.93 ? 0.06 : 0);
+  $("#flick").style.opacity = blk;
+  // captions
+  const cue = !endOn && TL.cues.find(c => t >= c.start && t < c.end);
+  const cap = $("#cap");
+  if (cue) {
+    cap.style.display = "block";
+    cap.className = cue.speaker === "KAMLA" ? "hi" : "";
+    cap.innerHTML = (cue.speaker === "KAMLA" ? "<small>SMT. KAMLA SINGH · HINDI</small>" : "") + cue.text;
+  } else cap.style.display = "none";
+  // grain
+  grainCtx.drawImage(grains[Math.floor(t * 30) % grains.length], 0, 0);
+};
+</script>
+</body>
+</html>
