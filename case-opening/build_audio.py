@@ -1,8 +1,8 @@
 """Build the voice + SFX + music mix and the timeline for the Grace Loan opening.
 
 Voices come from Microsoft Edge neural TTS (`pip install edge-tts`, no key needed):
-  NARRATOR      en-IN-PrabhatNeural (Indian-English male, calm, low)
-  KAMLA SINGH   hi-IN-SwaraNeural   (Hindi female, slowed, lowered, trembling)
+  NARRATOR      en-GB-RyanNeural    (British male, calm, low)
+  KAMLA SINGH   en-IN-NeerjaNeural  (Indian-English female, slowed, lowered, trembling)
 Set NO_TTS=1 to skip synthesis: the timeline then uses estimated gaps and the
 video is silent apart from SFX/music, so the lines can be recorded later.
 
@@ -29,21 +29,19 @@ SR = 48000
 NO_TTS = os.environ.get("NO_TTS") == "1"
 
 VOICES = {
-    "NARRATOR": dict(voice="en-IN-PrabhatNeural", rate="+20%", pitch="-7Hz"),
-    "KAMLA": dict(voice="hi-IN-SwaraNeural", rate="-8%", pitch="-9Hz"),
+    "NARRATOR": dict(voice="en-GB-RyanNeural", rate="+10%", pitch="-6Hz"),
+    "KAMLA": dict(voice="en-IN-NeerjaNeural", rate="-12%", pitch="-8Hz"),
 }
 SPEAKER_NAME = {"NARRATOR": "NARRATOR", "KAMLA": "SMT. KAMLA SINGH"}
 
 # ---------------------------------------------------------------- script ----
-# Each line: (speaker, spoken text for TTS, subtitle text, romanised original or None)
+# Each line: (spoken text for TTS, subtitle text). Spoken in English.
 KAMLA_LINES = [
-    ("आपने मेरे राहुल को मार दिया…", "You killed my Rahul…", "Aapne mere Rahul ko maar diya…"),
-    ("वो खून की खांसी कर रहा था, और आपने उसे बिना इलाज के घर भेज दिया।",
-     "He was coughing blood, and you sent him home without treating him.",
-     "Woh khoon ki khaansi kar raha tha, aur aapne usse bina ilaaj ke ghar bhej diya."),
-    ("दो दिन… सिर्फ़ दो दिन।", "Two days… only two days.", "Do din… sirf do din."),
-    ("सिंह परिवार आपको कभी माफ़ नहीं करेगा।", "The Singh family will never forgive you.",
-     "Singh parivaar aapko kabhi maaf nahi karega."),
+    ("You killed my Rahul...", "You killed my Rahul…"),
+    ("He was coughing blood... and you sent him home, without treating him.",
+     "He was coughing blood, and you sent him home without treating him."),
+    ("Two days... only two days.", "Two days… only two days."),
+    ("The Singh family will never forgive you.", "The Singh family will never forgive you."),
 ]
 
 NARRATION = {
@@ -353,8 +351,8 @@ def main():
     sfx.append((events["beep1"], phone_beep(), 1.0))
     t = events["beep1"] + 0.85
     events["vm_start"] = t
-    for i, (hi_txt, en_txt, _) in enumerate(KAMLA_LINES):
-        data, words = say("KAMLA", hi_txt)
+    for i, (spoken, en_txt) in enumerate(KAMLA_LINES):
+        data, words = say("KAMLA", spoken)
         voice_items.append((t, data, 1.0))
         d = len(data) / SR
         cues.append({"start": round(t, 3), "end": round(t + d + 0.2, 3), "text": en_txt, "speaker": "KAMLA"})
@@ -493,16 +491,14 @@ def main():
         return f"{ms // 3600000:02d}:{ms // 60000 % 60:02d}:{ms // 1000 % 60:02d},{ms % 1000:03d}"
     srt = []
     for k, c in enumerate(cues, 1):
-        label = "[Hindi] " if c["speaker"] == "KAMLA" and k == 1 else ""
+        label = ""
         srt.append(f"{k}\n{ts(c['start'])} --> {ts(c['end'])}\n{label}{c['text']}\n")
     (OUT / "grace_loan_opening.srt").write_text("\n".join(srt), encoding="utf-8")
 
     lines = ["THE GRACE LOAN MEMORIAL CASE — voiceover lines", "Timings are from the rendered video.", ""]
     lines.append("SCENE 1 — THE VOICEMAIL")
-    for (hi_txt, en_txt, roman), c in zip(KAMLA_LINES, [c for c in cues if c["speaker"] == "KAMLA"]):
-        lines.append(f"[{ts(c['start'])[3:8]}] SMT. KAMLA SINGH (V.O., Hindi, crying): {roman}")
-        lines.append(f"        Devanagari: {hi_txt}")
-        lines.append(f"        Subtitle:   {en_txt}")
+    for (_, en_txt), c in zip(KAMLA_LINES, [c for c in cues if c["speaker"] == "KAMLA"]):
+        lines.append(f"[{ts(c['start'])[3:8]}] SMT. KAMLA SINGH (V.O., English, crying): {en_txt}")
     for sc, title in ((3, "SCENE 3 — KABIR RAO"), (4, "SCENE 4 — THE HOSPITAL"), (5, "SCENE 5 — YOU ARE KABIR RAO")):
         lines += ["", title]
         for line, s in zip(NARRATION[sc], events[f"s{sc}_sentences"]):

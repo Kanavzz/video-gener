@@ -469,7 +469,7 @@ window.render = function (t) {
   if (cue) {
     cap.style.display = "block";
     cap.className = cue.speaker === "KAMLA" ? "hi" : "";
-    cap.innerHTML = (cue.speaker === "KAMLA" ? "<small>SMT. KAMLA SINGH · HINDI</small>" : "") + cue.text;
+    cap.innerHTML = (cue.speaker === "KAMLA" ? "<small>SMT. KAMLA SINGH · VOICEMAIL</small>" : "") + cue.text;
   } else cap.style.display = "none";
   // grain
   grainCtx.drawImage(grains[Math.floor(t * 30) % grains.length], 0, 0);
