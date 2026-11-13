@@ -106,7 +106,13 @@ html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--
 #stamp5 { left: 50%; top: 545px; font-size: 60px; z-index: 5; }
 #endcard { position: absolute; inset: 0; background: #000; display: none; align-items: center; justify-content: center;
   flex-direction: column; gap: 28px; z-index: 85; }
-#endcard .ph { font-family: "Special Elite", monospace; font-size: 140px; letter-spacing: 14px; color: var(--paper); }
+#pres, #count { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 34px; }
+#pres img { height: 800px; }
+#count .dial { position: relative; width: 460px; height: 460px; }
+#count svg { position: absolute; inset: 0; }
+#cnum { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-family: "Special Elite", monospace; font-size: 300px; color: var(--paper); padding-top: 20px; }
+#count .mini { position: absolute; right: 70px; bottom: 50px; height: 190px; }
 #endcard .sm { font-family: "Courier Prime", monospace; font-weight: 700; font-size: 36px; letter-spacing: 12px; color: #4fa8a1; }
 </style>
 </head>
@@ -165,7 +171,7 @@ html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--
     <div class="arrow">fixed amount per patient treated<div class="coin"></div></div>
     <div class="ic"><svg width="150" height="130" viewBox="0 0 150 130" stroke="#2F7F7A" stroke-width="5" fill="none"><rect x="20" y="30" width="110" height="94"/><path d="M75 44 V84 M55 64 H95" stroke="#EDE6D6"/><path d="M62 124 V100 H88 V124"/></svg><div>HOSPITAL</div></div>
   </div>
-  <div id="rahul"><div class="type">Rahul · 12</div></div>
+  <div id="rahul"><div class="type">Patient · Age 12</div></div>
   <svg id="ecg" width="1920" height="200" viewBox="0 0 1920 200"><path id="ecgp" stroke="#B3261E" stroke-width="5" fill="none"/></svg>
 </div>
 
@@ -196,7 +202,14 @@ html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--
   <div id="stamp5" class="stamp">INVESTIGATION OPEN</div>
 </div>
 
-<div id="endcard"><div class="sm">PRESENTED BY</div><div class="ph">CHAKRAVYUH</div></div>
+<div id="endcard">
+  <div id="pres"><div class="sm">PRESENTED BY</div><img src="assets/chakravyuh_logo.png" alt="Chakravyuh"></div>
+  <div id="count"><div class="sm">YOUR CASE STARTS IN</div>
+    <div class="dial"><svg width="460" height="460" viewBox="0 0 460 460"><circle cx="230" cy="230" r="200" stroke="#2a2f36" stroke-width="14" fill="none"/>
+      <circle id="cring" cx="230" cy="230" r="200" stroke="#DE2434" stroke-width="14" fill="none" stroke-linecap="round" stroke-dasharray="1257" transform="rotate(-90 230 230)"/></svg>
+      <div id="cnum">5</div></div>
+    <img class="mini" src="assets/chakravyuh_logo.png" alt=""></div>
+</div>
 <div id="cap"></div>
 <canvas id="grain" width="960" height="540"></canvas>
 <div id="vig"></div>
@@ -370,7 +383,7 @@ function scene4(t, sc) {
   const cp = ((t - flowOn) % 1.6) / 1.6;
   $("#flow .coin").style.left = (cp * 560) + "px";
   $("#flow .coin").style.opacity = t > flowOn + 0.5 ? Math.sin(Math.PI * cp) : 0;
-  // Rahul: everything dims, ECG line flatlines on "dead"
+  // 12-year-old patient: everything dims, ECG line flatlines on "dead"
   const dimP = ease(prog(t, rah, 0.8));
   $("#hosp").style.opacity = 1 - 0.85 * dimP;
   const rp = ease(prog(t, rah + 0.3, 0.8));
@@ -460,7 +473,19 @@ window.render = function (t) {
   // cut to black after "now", end card
   const endOn = t >= E.cut_black;
   $("#endcard").style.display = endOn ? "flex" : "none";
-  $("#endcard").style.opacity = clamp((t - E.cut_black - 0.5) / 0.6);
+  const endFade = clamp((t - E.cut_black - 0.4) / 0.6) * (1 - clamp((t - E.countdown_start - 5.1) / 0.6));
+  if (endOn) {
+    const cs = E.countdown_start, toC = clamp((t - cs + 0.35) / 0.35);
+    $("#pres").style.opacity = (1 - toC) * endFade;
+    $("#pres").style.transform = `scale(${0.96 + 0.04 * ease(prog(t, E.cut_black + 0.4, 1.2))})`;
+    $("#count").style.opacity = toC * endFade;
+    const k = Math.floor(t - cs), f = (t - cs) - k;
+    const n = clamp(5 - k, 1, 5);
+    $("#cnum").textContent = t < cs + 5 ? n : "0";
+    $("#cnum").style.color = t >= cs + 5 ? "#DE2434" : "";
+    $("#cnum").style.transform = t >= cs ? `scale(${1 + 0.18 * Math.max(0, 1 - f / 0.25)})` : "";
+    $("#cring").style.strokeDashoffset = 1257 * clamp((t - cs) / 5);
+  }
   blk = Math.max(blk, rnd(Math.floor(t * 30)) > 0.93 ? 0.06 : 0);
   $("#flick").style.opacity = blk;
   // captions
@@ -469,7 +494,7 @@ window.render = function (t) {
   if (cue) {
     cap.style.display = "block";
     cap.className = cue.speaker === "KAMLA" ? "hi" : "";
-    cap.innerHTML = (cue.speaker === "KAMLA" ? "<small>SMT. KAMLA SINGH · VOICEMAIL</small>" : "") + cue.text;
+    cap.innerHTML = (cue.speaker === "KAMLA" ? "<small>VOICEMAIL · CALLER</small>" : "") + cue.text;
   } else cap.style.display = "none";
   // grain
   grainCtx.drawImage(grains[Math.floor(t * 30) % grains.length], 0, 0);

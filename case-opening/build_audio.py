@@ -2,7 +2,7 @@
 
 Voices come from Microsoft Edge neural TTS (`pip install edge-tts`, no key needed):
   NARRATOR      en-GB-RyanNeural    (British male, calm, low)
-  KAMLA SINGH   en-IN-NeerjaNeural  (Indian-English female, slowed, lowered, trembling)
+  CALLER        en-IN-NeerjaNeural  (Indian-English female, slowed, lowered, trembling)
 Set NO_TTS=1 to skip synthesis: the timeline then uses estimated gaps and the
 video is silent apart from SFX/music, so the lines can be recorded later.
 
@@ -32,16 +32,16 @@ VOICES = {
     "NARRATOR": dict(voice="en-GB-RyanNeural", rate="+10%", pitch="-6Hz"),
     "KAMLA": dict(voice="en-IN-NeerjaNeural", rate="-12%", pitch="-8Hz"),
 }
-SPEAKER_NAME = {"NARRATOR": "NARRATOR", "KAMLA": "SMT. KAMLA SINGH"}
+SPEAKER_NAME = {"NARRATOR": "NARRATOR", "KAMLA": "CALLER (MOTHER)"}
 
 # ---------------------------------------------------------------- script ----
 # Each line: (spoken text for TTS, subtitle text). Spoken in English.
 KAMLA_LINES = [
-    ("You killed my Rahul...", "You killed my Rahul…"),
+    ("You killed my son...", "You killed my son…"),
     ("He was coughing blood... and you sent him home, without treating him.",
      "He was coughing blood, and you sent him home without treating him."),
     ("Two days... only two days.", "Two days… only two days."),
-    ("The Singh family will never forgive you.", "The Singh family will never forgive you."),
+    ("Our family will never forgive you.", "Our family will never forgive you."),
 ]
 
 NARRATION = {
@@ -61,7 +61,7 @@ NARRATION = {
         "A Director who says no patient is ever turned away for want of money.",
         "The government pays the hospital a fixed amount for every poor patient it treats — "
         "and its website boasts of hundreds of free treatments.",
-        "But a twelve-year-old boy named Rahul came here for help…",
+        "But a twelve-year-old patient came here for help…",
         "and two days later, he was dead.",
     ],
     5: [
@@ -76,7 +76,7 @@ NARRATION = {
 # Spoken form when it differs from the written line (helps the TTS voice).
 SPOKEN_FIX = {
     "A two-hundred-and-ten-bed hospital on Rajpur Road.": "A two hundred and ten bed hospital, on Rajpur Road.",
-    "But a twelve-year-old boy named Rahul came here for help…": "But a twelve year old boy named Rahul, came here for help...",
+    "But a twelve-year-old patient came here for help…": "But a twelve year old patient, came here for help...",
     "and two days later, he was dead.": "and two days later... he was dead.",
     "Your investigation begins… now.": "Your investigation begins... now.",
 }
@@ -412,7 +412,13 @@ def main():
         tail = {3: 0.8, 4: 1.0, 5: 0.0}[sc]
         if sc == 5:
             events["cut_black"] = round(events["now_word"] + 0.55, 3)
-            end = events["cut_black"] + 2.6  # 2 s+ end card hold
+            # "Presented by" + Chakravyuh logo, then a 5-second "case starts in" countdown
+            events["logo_start"] = events["cut_black"]
+            events["countdown_start"] = round(events["logo_start"] + 3.4, 3)
+            for k in range(5):
+                sfx.append((events["countdown_start"] + k, tone(880, 0.12, 0.35) + np.pad(tick(True), (0, int(0.12 * SR) - int(0.05 * SR))), 1.0))
+            sfx.append((events["countdown_start"] + 5, tone(1320, 0.7, 0.45), 1.0))
+            end = events["countdown_start"] + 5.9
             events["clock_start"] = sentences[1]["end"] + 0.1
             for k in range(int((events["now_word"] - events["clock_start"]) / 1.0) + 1):
                 tt = events["clock_start"] + k
@@ -498,7 +504,7 @@ def main():
     lines = ["THE GRACE LOAN MEMORIAL CASE — voiceover lines", "Timings are from the rendered video.", ""]
     lines.append("SCENE 1 — THE VOICEMAIL")
     for (_, en_txt), c in zip(KAMLA_LINES, [c for c in cues if c["speaker"] == "KAMLA"]):
-        lines.append(f"[{ts(c['start'])[3:8]}] SMT. KAMLA SINGH (V.O., English, crying): {en_txt}")
+        lines.append(f"[{ts(c['start'])[3:8]}] CALLER, the patient's mother (V.O., English, crying): {en_txt}")
     for sc, title in ((3, "SCENE 3 — KABIR RAO"), (4, "SCENE 4 — THE HOSPITAL"), (5, "SCENE 5 — YOU ARE KABIR RAO")):
         lines += ["", title]
         for line, s in zip(NARRATION[sc], events[f"s{sc}_sentences"]):
