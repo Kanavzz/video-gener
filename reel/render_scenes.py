@@ -84,22 +84,48 @@ def resolve(keys, starts, ends, dur):
     return sorted(out, key=lambda k: k[0])
 
 
-def render(scene):
+TARGET = 40.0                # total reel length; pauses/holds scale evenly to hit it
+REACTION, END_CARD = 1.4, 2.0
+ROOM = {"scene1": (0.18, 0.05), "scene2": (0.35, 0.10), "scene3": (0.12, 0.04),
+        "scene4": (0.35, 0.10), "scene5": (0.45, 0.12)}  # (reverb decay s, wet mix)
+
+
+def voice_lengths(scene):
+    return [read_float(B / "voice" / f"{scene['id']}_{i}.wav") for i in range(len(scene["lines"]))]
+
+
+def layout(scene, lengths, k):
+    """Line start/end times and scene length with every non-speech interval scaled by k."""
+    sid = scene["id"]
+    t, starts, ends = LEADS.get(sid, LEAD) * k, [], []
+    for n in lengths:
+        starts.append(t); t += n; ends.append(t); t += GAP * k
+    dur = max(MIN_DURS.get(sid, MIN_DUR) * k, ends[-1] + TAIL * k)
+    if scene.get("end_card"):
+        dur = max(dur, ends[-1] + (REACTION + END_CARD) * k)
+    return starts, ends, dur
+
+
+def room(audio, sid):
+    decay, wet = ROOM.get(sid, (0.2, 0.05))
+    n = int(decay * RATE)
+    ir = np.random.default_rng(7).normal(0, 1, n) * np.exp(-np.arange(n) / (decay * RATE / 6.9))
+    ir[: int(0.012 * RATE)] = 0  # pre-delay
+    rev = np.convolve(audio, ir / np.sqrt((ir ** 2).sum()), mode="full")[: len(audio)]
+    return (audio * (1 - wet) + rev * wet * 0.6).astype(np.float32)
+
+
+def render(scene, k, dur_override=None):
     sid = scene["id"]
     img = Image.open(B / "images" / f"{sid}_fixed.png").convert("RGB")
     iw, ih = img.size
-    # Audio: lines back to back.
-    t, starts, ends, parts = LEADS.get(sid, LEAD), [], [], []
-    for i in range(len(scene["lines"])):
-        data, rate = read_float(B / "voice" / f"{sid}_{i}.wav")
-        starts.append(t); t += len(data) / rate; ends.append(t)
-        parts.append((starts[-1], data)); t += GAP
-    dur = max(MIN_DURS.get(sid, MIN_DUR), ends[-1] + TAIL)
-    if scene.get("end_card"):
-        dur = max(dur, ends[-1] + 1.4 + 2.0)  # reaction beat, then 2 s end card
+    voices = voice_lengths(scene)
+    starts, ends, dur = layout(scene, [len(d) / r for d, r in voices], k)
+    dur = dur_override or dur
     audio = np.zeros(int(dur * RATE) + 1, dtype=np.float32)
-    for st, data in parts:
+    for st, (data, rate) in zip(starts, voices):
         i0 = int(st * RATE); audio[i0:i0 + len(data)] += data[: len(audio) - i0]
+    audio = room(audio, sid)
     if scene.get("lower_third"):
         audio[: len(STING)] += STING[: len(audio)]
     audio_path = B / "clips" / f"{sid}.wav"
@@ -107,7 +133,9 @@ def render(scene):
     import soundfile
     soundfile.write(str(audio_path), audio, RATE)
 
-    keys = resolve(CAMERA[sid], starts, ends, dur)
+    scaled = [[t * k if isinstance(t, (int, float)) else re.sub(r"([+-])([\d.]+)$", lambda m: f"{m.group(1)}{float(m.group(2)) * k:.3f}", t), *r]
+              for t, *r in CAMERA[sid]]
+    keys = resolve(scaled, starts, ends, dur)
     out = B / "clips" / f"{sid}.mp4"
     ff = subprocess.Popen(["ffmpeg", "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgb24",
                            "-s", f"{W}x{H}", "-r", str(FPS), "-i", "-", "-i", str(audio_path),
@@ -124,15 +152,30 @@ def render(scene):
         frame = img.transform((W, H), Image.AFFINE, (s, 0, x0, 0, s, y0), resample=Image.BICUBIC)
         ff.stdin.write(frame.tobytes())
     ff.stdin.close(); ff.wait()
-    cues = [{"who": w, "text": tx, "start": round(a - 0.08, 2), "end": round(b + 0.25, 2)}
+    pad = min(0.25, GAP * k * 0.5)
+    cues = [{"who": w, "text": tx, "start": round(max(0, a - 0.06), 2), "end": round(b + pad, 2)}
             for (w, tx), a, b in zip(scene["lines"], starts, ends)]
     (B / "cues").mkdir(exist_ok=True)
     (B / "cues" / f"{sid}.json").write_text(json.dumps(cues, indent=2, ensure_ascii=False))
     print(sid, f"{dur:.2f}s", flush=True)
-    return round(dur, 2)
+    meta = {"duration": round(dur, 4)}
+    if scene.get("context_at"):  # scene 5: box comes in once the camera has left the notice
+        meta["context_at"] = round(starts[0] + 0.3 * k, 2)
+    return meta
 
 
 if __name__ == "__main__":
-    durs = {s["id"]: render(s) for s in SCENES}
-    (B / "durations.json").write_text(json.dumps(durs, indent=2))
-    print("total", sum(durs.values()))
+    lengths = {sc["id"]: [len(d) / r for d, r in voice_lengths(sc)] for sc in SCENES}
+    total = lambda k: sum(layout(sc, lengths[sc["id"]], k)[2] for sc in SCENES)
+    lo, hi = 0.3, 2.0
+    for _ in range(60):  # total(k) is monotonic in k
+        mid = (lo + hi) / 2
+        lo, hi = (mid, hi) if total(mid) < TARGET else (lo, mid)
+    k = (lo + hi) / 2
+    # snap scene lengths to whole frames, putting any rounding remainder on the last scene
+    durs = [round(layout(sc, lengths[sc["id"]], k)[2] * FPS) / FPS for sc in SCENES]
+    durs[-1] = round(TARGET * FPS) / FPS - sum(durs[:-1])
+    print(f"pause/hold scale k={k:.3f}", flush=True)
+    meta = {sc["id"]: render(sc, k, d) for sc, d in zip(SCENES, durs)}
+    (B / "durations.json").write_text(json.dumps(meta, indent=2))
+    print("total", round(sum(m["duration"] for m in meta.values()), 3))
