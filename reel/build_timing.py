@@ -22,12 +22,15 @@ def even_cues(lines, start=0.4, end=DURATION - 0.3):
             for i, (w, t) in enumerate(lines)]
 
 
+durs_file = B / "durations.json"
+DURS = json.loads(durs_file.read_text()) if durs_file.exists() else {}
+
 out = []
 for s in SCENES:
     cue_file = B / "cues" / f"{s['id']}.json"
     cues = json.loads(cue_file.read_text()) if cue_file.exists() else even_cues(s["lines"])
-    out.append({"id": s["id"], "duration": DURATION, "chip": CHIPS[s["id"]], "context": s["context"], "cues": cues,
-                **{k: s[k] for k in ("lower_third", "timeline", "notice", "end_card") if k in s}})
+    out.append({"id": s["id"], "duration": DURS.get(s["id"], DURATION), "chip": CHIPS[s["id"]], "context": s["context"], "cues": cues,
+                **{k: s[k] for k in ("lower_third", "end_card", "context_at") if k in s}})
 B.mkdir(exist_ok=True)
 (B / "scenes.json").write_text(json.dumps(out, indent=2, ensure_ascii=False))
 print(f"wrote {B / 'scenes.json'}")

@@ -79,10 +79,10 @@ const ease = x => 1 - Math.pow(1 - clamp(x), 3);
 function fade(t, a, b, inDur = 0.35, outDur = 0.25) { return Math.min(ease((t - a) / inDur), ease((b - t) / outDur)); }
 
 window.render = function (t) {
-  const D = S.duration, endAt = S.end_card ? 6.0 : D + 1;
+  const D = S.duration, endAt = S.end_card ? D - 2.0 : D + 1;
   const c = fade(t, 0.15, endAt, 0.4);
   chip.style.opacity = c;
-  const k = fade(t, 1.5, endAt, 0.45);
+  const k = fade(t, S.context_at || 1.5, endAt, 0.45);
   ctx.style.opacity = k; ctx.style.transform = `translateY(${(1 - k) * -30}px) scale(${0.96 + 0.04 * k})`;
   S.cues.forEach((cue, i) => {
     const o = fade(t, cue.start, Math.min(cue.end, endAt), 0.12, 0.12);
@@ -92,7 +92,7 @@ window.render = function (t) {
     lower.querySelector(".tick").style.textIndent = `${800 - t * 160}px`; }
   if (tl) { const o = fade(t, 0.5, D + 1, 0.4); tl.style.opacity = o; hl.style.width = `${820 * ease((t - 1.0) / 3.5)}px`; }
   if (notice) { notice.style.opacity = fade(t, 0.4, endAt, 0.4); }
-  if (end) { const o = ease((t - 6.0) / 0.45); end.style.opacity = o; end.querySelector("h1").style.transform = `scale(${0.92 + 0.08 * o})`; }
+  if (end) { const o = ease((t - endAt) / 0.45); end.style.opacity = o; end.querySelector("h1").style.transform = `scale(${0.92 + 0.08 * o})`; }
 };
 window.render(0);
 </script>

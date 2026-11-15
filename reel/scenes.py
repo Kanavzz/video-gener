@@ -108,7 +108,7 @@ SCENES = [
             "body": "Resistance ran from the 1830s to the 1870s, across peasant and tribal India — not just the North.",
             "author": "Pati",
         },
-        "timeline": ["1830s", "1857", "1870s"],
+        "timeline": ["1830s", "1857", "1870s"],  # painted onto the smartboard
     },
     {
         "id": "scene5",
@@ -130,7 +130,8 @@ SCENES = [
             "body": "After 1857, colonial writers blamed these reforms — though “saving Indian women” was the empire’s excuse for ruling.",
             "author": "Sen",
         },
-        "notice": ["1829: Sati banned.", "1856: Widow remarriage allowed."],
+        "notice": ["1829: Sati banned.", "1856: Widow remarriage allowed."],  # painted into the image
+        "context_at": 3.2,  # after the camera leaves the notice
         "end_card": ("Civilisation? It’s complicated.", "Kanav Agarwal"),
     },
 ]
